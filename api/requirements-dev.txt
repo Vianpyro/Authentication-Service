@@ -1,0 +1,4 @@
+-r requirements.txt
+build>=1.2.0,<2
+pytest>=8.3.5,<9
+pytest-asyncio>=1.0.0,<2

@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "authentication-api"
+dynamic = ["version"]
+description = "Authentication API"
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "Vianpyro" }]
+requires-python = ">=3.12.11"
+dependencies = []  # This will be populated dynamically below
+urls = { Homepage = "https://github.com/Vianpyro/Authentication-Service" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Framework :: FastAPI",
+]
+
+[tool.setuptools]
+package-dir = { "" = "app" }
+
+[tool.setuptools.packages.find]
+where = ["app"]
+exclude = ["tests*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.py", "requirements.txt", "Dockerfile"]
+
+[tool.setuptools.dynamic]
+version = { attr = "version.__version__" }
+dependencies = { file = ["requirements.txt"] }

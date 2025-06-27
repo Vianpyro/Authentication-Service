@@ -1,13 +1,43 @@
 {
-    "name": "Template Development Container",
+    "name": "Authentication Service",
     "dockerFile": "Dockerfile",
+    "runArgs": [
+        "--cap-add=CHOWN",
+        "--cap-add=SETGID",
+        "--cap-add=SETUID",
+        "--cap-drop=ALL",
+        "--security-opt=no-new-privileges:true"
+    ],
     "customizations": {
         "settings": {
             "terminal.integrated.shell.linux": "/bin/bash"
         },
         "vscode": {
-            "extensions": ["esbenp.prettier-vscode"]
+            "extensions": [
+                "esbenp.prettier-vscode",
+                "gruntfuggly.triggertaskonsave",
+                "ms-python.black-formatter",
+                "ms-python.python",
+                "ms-python.isort",
+                "mtxr.sqltools",
+                "mtxr.sqltools-driver-pg"
+            ]
         }
+    },
+    "forwardPorts": [
+        8000
+    ],
+    "otherPortsAttributes": {
+        "onAutoForward": "ignore"
+    },
+    "postCreateCommand": "initdb -D $PGDATA && pg_ctl -D $PGDATA -o '-k /run/postgresql' -l /tmp/pg.log start && createdb authentication-service && pg_ctl -D $PGDATA stop",
+    "postStartCommand": {
+        "startPostgres": "pg_ctl -D $PGDATA -o '-k /run/postgresql' -l /tmp/pg.log start",
+        "installApiRequirements": "pip3 install -r api/requirements-dev.txt"
+    },
+    "postAttachCommand": {
+        "lintSql": "sqlfluff fix database/sql/ -v",
+        "runPytest": "python3 -m pytest api/tests"
     },
     "remoteUser": "vscode"
 }
