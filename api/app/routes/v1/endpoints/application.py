@@ -7,6 +7,7 @@ This module provides FastAPI endpoints for registering applications in the authe
 from app.routes.v1.schemas.application import (
     AppCreate,
     AppCreateResponse,
+    AppDelete,
     AppDeleteResponse,
 )
 from app.utility.database import get_db
@@ -26,10 +27,10 @@ async def register_application(
     application: AppCreate, db: AsyncSession = Depends(get_db)
 ):
     "Register a new application in the authentication database."
-    # Call the register_app database function
+    # Call the register_application database function
     result = await db.execute(
-        text("SELECT register_app(:slug, :app_name)"),
-        {"slug": application.slug, "app_name": application.app_name},
+        text("SELECT register_application(:p_app_name, :p_app_slug)"),
+        {"p_app_name": application.name, "p_app_slug": application.slug},
     )
     app_id = result.scalar()
     await db.commit()
@@ -37,16 +38,18 @@ async def register_application(
 
 
 @router.delete(
-    "/{app_id}",
+    "/",
     status_code=status.HTTP_200_OK,
     response_model=AppDeleteResponse,
 )
-async def delete_application(app_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_application(
+    application: AppDelete, db: AsyncSession = Depends(get_db)
+):
     "Delete an application from the authentication database."
     result = await db.execute(
-        text("SELECT delete_app(:app_id)"),
-        {"app_id": app_id},
+        text("SELECT * FROM delete_application(:p_app_id, :p_app_slug)"),
+        {"p_app_id": application.id, "p_app_slug": application.slug},
     )
-    app_slug = result.scalar()
+    app_name = result.scalar()
     await db.commit()
-    return {"slug": app_slug}
+    return {"name": app_name}

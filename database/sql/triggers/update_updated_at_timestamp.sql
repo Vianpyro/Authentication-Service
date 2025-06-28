@@ -4,9 +4,9 @@ BEFORE UPDATE ON users
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_timestamp();
 
--- Update the `updated_at` timestamp for the apps table
-CREATE TRIGGER trg_update_apps_timestamp
-BEFORE UPDATE ON apps
+-- Update the `updated_at` timestamp for the applications table
+CREATE TRIGGER trg_update_applications_timestamp
+BEFORE UPDATE ON applications
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_timestamp();
 

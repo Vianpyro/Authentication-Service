@@ -16,7 +16,7 @@ Base = declarative_base()
 class App(Base):
     """Application model representing registered applications."""
 
-    __tablename__ = "apps"
+    __tablename__ = "applications"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     slug = Column(String(50), nullable=False, unique=True)

@@ -46,8 +46,8 @@ class AppFieldTypes:
 class AppCreate(BaseModel):
     """Schema for creating a new application."""
 
+    name: AppFieldTypes.AppName
     slug: AppFieldTypes.Slug
-    app_name: AppFieldTypes.AppName
 
 
 class AppCreateResponse(BaseModel):
@@ -56,7 +56,14 @@ class AppCreateResponse(BaseModel):
     id: uuid.UUID = AppFieldTypes.Id
 
 
+class AppDelete(BaseModel):
+    """Schema for deleting an application."""
+
+    id: AppFieldTypes.Id
+    slug: AppFieldTypes.Slug
+
+
 class AppDeleteResponse(BaseModel):
     """Schema for application deletion response."""
 
-    slug: AppFieldTypes.Slug
+    name: AppFieldTypes.AppName

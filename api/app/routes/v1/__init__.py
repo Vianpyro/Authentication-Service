@@ -4,7 +4,7 @@ Base module for the API version 1 routes.
 
 from fastapi import FastAPI
 
-from .endpoints.app import router as app_router
+from .endpoints.application import router as app_router
 
 __version__ = "0.0.0"
 

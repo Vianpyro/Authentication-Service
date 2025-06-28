@@ -20,7 +20,9 @@ class User(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     app_id = Column(
-        UUID(as_uuid=True), ForeignKey("apps.id", ondelete="CASCADE"), nullable=False
+        UUID(as_uuid=True),
+        ForeignKey("applications.id", ondelete="CASCADE"),
+        nullable=False,
     )
 
     email_encrypted = Column(Text, nullable=False)
