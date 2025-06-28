@@ -11,7 +11,7 @@ from app.routes.v1.schemas.application import (
     AppDeleteResponse,
 )
 from app.utility.database import get_db
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -47,9 +47,14 @@ async def delete_application(
 ):
     "Delete an application from the authentication database."
     result = await db.execute(
-        text("SELECT * FROM delete_application(:p_app_id, :p_app_slug)"),
+        text("SELECT delete_application(:p_app_id, :p_app_slug)"),
         {"p_app_id": application.id, "p_app_slug": application.slug},
     )
     app_name = result.scalar()
+    if app_name is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Application not found or ID/slug mismatch",
+        )
     await db.commit()
     return {"name": app_name}
