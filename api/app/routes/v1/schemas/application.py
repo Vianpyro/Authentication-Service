@@ -4,10 +4,11 @@ Pydantic schemas for API request/response models.
 This module defines the Pydantic models used for request and response validation.
 """
 
-import uuid
 from typing import Annotated
 
 from pydantic import BaseModel, Field
+
+from .common import CommonFieldTypes
 
 __all__ = [
     "AppCreate",
@@ -31,6 +32,10 @@ class AppFieldTypes:
         ),
     ]
 
+    CreatedAt = CommonFieldTypes.CreatedAt
+
+    Id = CommonFieldTypes.UUID
+
     Slug = Annotated[
         str,
         Field(
@@ -40,15 +45,6 @@ class AppFieldTypes:
             max_length=50,
             description="Application slug: 3-50 characters, lowercase letters, numbers, hyphens, and underscores. Must start and end with alphanumeric characters.",
             examples=["my-app", "user-service", "api_gateway", "service123"],
-        ),
-    ]
-
-    Id = Annotated[
-        uuid.UUID,
-        Field(
-            title="Application ID",
-            description="Unique identifier for the application",
-            examples=["123e4567-e89b-12d3-a456-426614174000"],
         ),
     ]
 
@@ -63,7 +59,7 @@ class AppCreate(BaseModel):
 class AppCreateResponse(BaseModel):
     """Schema for application response."""
 
-    id: uuid.UUID = AppFieldTypes.Id
+    id: AppFieldTypes.Id
 
 
 class AppDelete(BaseModel):

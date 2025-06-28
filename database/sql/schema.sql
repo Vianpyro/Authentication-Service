@@ -25,6 +25,11 @@ CREATE TABLE applications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     slug TEXT NOT NULL UNIQUE CHECK (slug ~ '^[a-z0-9_-]{3,50}$'),
     app_name TEXT NOT NULL CHECK (char_length(app_name) >= 3 AND char_length(app_name) <= 100),
+    base_url TEXT NOT NULL CHECK (
+        base_url ~ '^https?://[a-zA-Z0-9.-]+(?:\:[0-9]+)?(?:/[a-zA-Z0-9._~:/?#[\]@!$&''()*+,;=-]*)?$'
+        AND char_length(base_url) >= 10
+        AND char_length(base_url) <= 2048
+    ),
     created_at NON_FUTURE_TIMESTAMP NOT NULL DEFAULT current_timestamp
 );
 
@@ -83,7 +88,7 @@ CREATE TABLE device_fingerprints (
     app_id UUID NOT NULL REFERENCES applications (id) ON DELETE CASCADE,
 
     fingerprint_hash SHA_256_HASH NOT NULL,
-    device_name TEXT NOT NULL CHECK (char_length(device_name) <= 100),
+    device_name TEXT NOT NULL CHECK (char_length(device_name) <> '' AND char_length(device_name) <= 100),
     user_agent USER_AGENT_STR,
     last_seen_at NON_FUTURE_TIMESTAMP NOT NULL DEFAULT current_timestamp,
 
@@ -121,12 +126,13 @@ CREATE TABLE password_reset_tokens (
 
     user_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     created_at NON_FUTURE_TIMESTAMP NOT NULL DEFAULT current_timestamp,
-    expires_at NON_FUTURE_TIMESTAMP NOT NULL DEFAULT current_timestamp + INTERVAL '1 hour'
+    expires_at NON_FUTURE_TIMESTAMP NOT NULL DEFAULT current_timestamp + INTERVAL '15 minutes'
 );
 
 -- TOTP 2FA Secrets
 CREATE TABLE totp_secrets (
-    user_id UUID PRIMARY KEY REFERENCES users (id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users (id) ON DELETE CASCADE,
     secret_encrypted NON_EMPTY_TEXT NOT NULL,
     secret_hash SHA_256_HASH NOT NULL,
     key_version SMALLINT NOT NULL DEFAULT 1,
