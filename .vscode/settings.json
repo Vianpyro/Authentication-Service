@@ -1,6 +1,5 @@
 {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.formatOnSave": true,
     "editor.insertSpaces": true,
     "editor.tabSize": 4,
     "files.insertFinalNewline": true,
@@ -36,7 +35,8 @@
         "editor.defaultFormatter": "ms-python.black-formatter",
         "editor.codeActionsOnSave": {
             "source.organizeImports": "always"
-        }
+        },
+        "editor.formatOnSave": true
     },
     "isort.args": [
         "--profile",
@@ -55,5 +55,8 @@
             "app/**/*.py",
             "!tests/**"
         ]
+    },
+    "[sql]": {
+        "editor.defaultFormatter": "mtxr.sqltools"
     }
 }

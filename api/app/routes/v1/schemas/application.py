@@ -9,6 +9,13 @@ from typing import Annotated
 
 from pydantic import BaseModel, Field
 
+__all__ = [
+    "AppCreate",
+    "AppCreateResponse",
+    "AppDelete",
+    "AppDeleteResponse",
+]
+
 
 class AppFieldTypes:
     """Reusable field types for application schemas."""
@@ -16,6 +23,7 @@ class AppFieldTypes:
     AppName = Annotated[
         str,
         Field(
+            title="Application Name",
             min_length=3,
             max_length=100,
             description="Human-readable application name",
@@ -26,6 +34,7 @@ class AppFieldTypes:
     Slug = Annotated[
         str,
         Field(
+            title="Application Slug",
             pattern=r"^[a-z0-9][a-z0-9_-]{1,48}[a-z0-9]$",
             min_length=3,
             max_length=50,
@@ -37,6 +46,7 @@ class AppFieldTypes:
     Id = Annotated[
         uuid.UUID,
         Field(
+            title="Application ID",
             description="Unique identifier for the application",
             examples=["123e4567-e89b-12d3-a456-426614174000"],
         ),

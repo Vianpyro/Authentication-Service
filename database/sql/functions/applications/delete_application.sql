@@ -5,13 +5,13 @@ CREATE OR REPLACE FUNCTION delete_application(
 RETURNS TEXT
 AS $$
 DECLARE
-    old_app_name TEXT;
+    v_app_name TEXT;
 BEGIN
     DELETE FROM applications
     WHERE id = p_app_id AND slug = p_app_slug
-    RETURNING app_name INTO old_app_name;
+    RETURNING app_name INTO v_app_name;
 
-    RETURN old_app_name;
+    RETURN v_app_name;
 END;
 $$ LANGUAGE plpgsql;
 
