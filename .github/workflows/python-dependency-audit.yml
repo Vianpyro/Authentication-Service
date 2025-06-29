@@ -33,6 +33,10 @@ jobs:
 
       - name: Run pip-audit
         run: |
-          pip-audit -r api/requirements.txt -S -f markdown > audit-report.md
+          pip-audit -r api/requirements.txt -S -f markdown > pip-audit-report.md
           echo "## 🔐 Python Dependencies Audit Report" >> $GITHUB_STEP_SUMMARY
-          cat audit-report.md >> $GITHUB_STEP_SUMMARY
+          if [ -s pip-audit-report.md ]; then
+            cat pip-audit-report.md >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No known vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+          fi
