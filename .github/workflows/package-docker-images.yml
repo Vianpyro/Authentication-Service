@@ -94,9 +94,11 @@ jobs:
           - component: api
             context: ./api
             dockerfile: Dockerfile
+            changed: 'true' # For debugging purposes
           - component: db
             context: ./database
             dockerfile: Dockerfile
+            changed: 'true' # For debugging purposes
 
     steps:
       - uses: actions/checkout@v4
