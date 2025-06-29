@@ -15,10 +15,37 @@ jobs:
     outputs:
       api-changed: ${{ steps.changes.outputs.api-changed }}
       db-changed: ${{ steps.changes.outputs.db-changed }}
+      version: ${{ steps.version.outputs.tag }}
+      repo-lower: ${{ steps.repo.outputs.name }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Extract version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            # Use release tag, remove 'v' prefix if present
+            VERSION="${{ github.event.release.tag_name }}"
+            VERSION="${VERSION#v}"
+          else
+            # Extract from version file
+            if [ -f "api/version.py" ]; then
+              VERSION=$(grep -oP '__version__\s*=\s*"\K[0-9]+\.[0-9]+\.[0-9]+' api/version.py)
+            elif [ -f "database/version.py" ]; then
+              VERSION=$(grep -oP '__version__\s*=\s*"\K[0-9]+\.[0-9]+\.[0-9]+' database/version.py)
+            else
+              VERSION="$(date +%Y.%m.%d)"
+            fi
+          fi
+          echo "tag=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Building version: $VERSION"
+
+      - name: Normalize repository name
+        id: repo
+        run: |
+          echo "name=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
 
       - name: Check for changes
         id: changes
@@ -65,20 +92,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Extract version
-        id: version
-        run: |
-          if [ "${{ github.event_name }}" = "release" ]; then
-            # Use release tag, remove 'v' prefix if present
-            VERSION="${{ github.event.release.tag_name }}"
-            VERSION="${VERSION#v}"
-          else
-            # Extract from version file
-            VERSION=$(grep -oP '__version__\s*=\s*"\K[0-9]+\.[0-9]+\.[0-9]+' api/version.py)
-          fi
-          echo "tag=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "Building API version: $VERSION"
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -91,10 +104,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Normalize image name
-        run: |
-          echo "REPO_LOWER=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
-
       - name: Build and push multi-arch API Docker image
         uses: docker/build-push-action@v5
         with:
@@ -102,15 +111,15 @@ jobs:
           platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6,linux/386,linux/ppc64le,linux/s390x
           push: true
           tags: |
-            ghcr.io/${{ env.REPO_LOWER }}-api:${{ steps.version.outputs.tag }}
-            ghcr.io/${{ env.REPO_LOWER }}-api:latest
+            ghcr.io/${{ needs.check-changes.outputs.repo-lower }}-api:${{ needs.check-changes.outputs.version }}
+            ghcr.io/${{ needs.check-changes.outputs.repo-lower }}-api:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Generate API SBOM
         uses: anchore/sbom-action@v0
         with:
-          image: ghcr.io/${{ env.REPO_LOWER }}-api:${{ steps.version.outputs.tag }}
+          image: ghcr.io/${{ needs.check-changes.outputs.repo-lower }}-api:${{ needs.check-changes.outputs.version }}
           format: spdx-json
 
   docker-db:
@@ -121,26 +130,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Extract version
-        id: version
-        run: |
-          if [ "${{ github.event_name }}" = "release" ]; then
-            # Use release tag, remove 'v' prefix if present
-            VERSION="${{ github.event.release.tag_name }}"
-            VERSION="${VERSION#v}"
-          else
-            # Extract from version file or use timestamp for database
-            if [ -f "database/version.py" ]; then
-              VERSION=$(grep -oP '__version__\s*=\s*"\K[0-9]+\.[0-9]+\.[0-9]+' database/version.py)
-            elif [ -f "api/version.py" ]; then
-              VERSION=$(grep -oP '__version__\s*=\s*"\K[0-9]+\.[0-9]+\.[0-9]+' api/version.py)
-            else
-              VERSION="$(date +%Y.%m.%d)"
-            fi
-          fi
-          echo "tag=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "Building database version: $VERSION"
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -153,10 +142,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Normalize image name
-        run: |
-          echo "REPO_LOWER=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
-
       - name: Build and push multi-arch database Docker image
         uses: docker/build-push-action@v5
         with:
@@ -165,13 +150,13 @@ jobs:
           platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6,linux/386,linux/ppc64le,linux/s390x
           push: true
           tags: |
-            ghcr.io/${{ env.REPO_LOWER }}-db:${{ steps.version.outputs.tag }}
-            ghcr.io/${{ env.REPO_LOWER }}-db:latest
+            ghcr.io/${{ needs.check-changes.outputs.repo-lower }}-db:${{ needs.check-changes.outputs.version }}
+            ghcr.io/${{ needs.check-changes.outputs.repo-lower }}-db:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Generate database SBOM
         uses: anchore/sbom-action@v0
         with:
-          image: ghcr.io/${{ env.REPO_LOWER }}-db:${{ steps.version.outputs.tag }}
+          image: ghcr.io/${{ needs.check-changes.outputs.repo-lower }}-db:${{ needs.check-changes.outputs.version }}
           format: spdx-json
