@@ -69,8 +69,8 @@ Authentication-Service/
    DATABASE_URL=postgresql+asyncpg://postgres:${DB_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
    ```
 
-   > [!IMPORTANT]
-   > Change `DB_PASSWORD` to a secure password before running in production.
+> [!IMPORTANT]
+> Change `DB_PASSWORD` to a secure password before running in production.
 
 3. **Open in VS Code Dev Container:**
    ```bash
