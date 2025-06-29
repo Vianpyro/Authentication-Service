@@ -11,7 +11,7 @@ on:
     paths:
       - api/requirements.txt
   schedule:
-    - cron: "0 4 * * 1" # Every Monday at 4:00 UTC
+    - cron: '0 4 * * 1' # Every Monday at 4:00 UTC
   workflow_dispatch:
 
 jobs:
@@ -24,7 +24,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.x"
+          python-version: '3.x'
 
       - name: Install dependencies
         run: |
