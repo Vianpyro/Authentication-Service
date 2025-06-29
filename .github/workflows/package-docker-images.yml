@@ -70,7 +70,6 @@ jobs:
                 echo "api-changed=false" >> "$GITHUB_OUTPUT"
                 echo "No .py files changed in api/ folder"
               fi
-
               # Check if any database files changed since previous release
               DB_CHANGED_FILES=$(git diff --name-only "$PREV_TAG"..HEAD | grep -E '^(database/|db/).*\.(sql|py|sh|dockerfile|Dockerfile)$' || true)
               if [ -n "$DB_CHANGED_FILES" ]; then
@@ -84,104 +83,66 @@ jobs:
             fi
           fi
 
-  docker-api:
+  docker-build:
     runs-on: ubuntu-latest
     needs: check-changes
-    if: needs.check-changes.outputs.api-changed == 'true'
+    if: needs.check-changes.outputs.api-changed == 'true' || needs.check-changes.outputs.db-changed == 'true'
+
+    strategy:
+      matrix:
+        include:
+          - component: api
+            context: .
+            dockerfile: ./Dockerfile
+            changed: ${{ needs.check-changes.outputs.api-changed }}
+          - component: db
+            context: ./database
+            dockerfile: ./database/Dockerfile
+            changed: ${{ needs.check-changes.outputs.db-changed }}
 
     steps:
       - uses: actions/checkout@v4
+        if: matrix.changed == 'true'
 
       - name: Set up QEMU
+        if: matrix.changed == 'true'
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
+        if: matrix.changed == 'true'
         uses: docker/setup-buildx-action@v3
 
       - uses: docker/login-action@v3
+        if: matrix.changed == 'true'
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push multi-arch API Docker image
+      - name: Build and push multi-arch Docker image
+        if: matrix.changed == 'true'
         uses: docker/build-push-action@v5
         with:
-          context: ./api
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
           platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6,linux/386,linux/ppc64le,linux/s390x
           push: true
           tags: |
-            ghcr.io/${{ needs.check-changes.outputs.repo-lower }}-api:${{ needs.check-changes.outputs.version }}
-            ghcr.io/${{ needs.check-changes.outputs.repo-lower }}-api:latest
+            ghcr.io/${{ needs.check-changes.outputs.repo-lower }}-${{ matrix.component }}:${{ needs.check-changes.outputs.version }}
+            ghcr.io/${{ needs.check-changes.outputs.repo-lower }}-${{ matrix.component }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Generate API SBOM
+      - name: Generate SBOM
+        if: matrix.changed == 'true'
         uses: anchore/sbom-action@v0
         with:
-          image: ghcr.io/${{ needs.check-changes.outputs.repo-lower }}-api:${{ needs.check-changes.outputs.version }}
+          image: ghcr.io/${{ needs.check-changes.outputs.repo-lower }}-${{ matrix.component }}:${{ needs.check-changes.outputs.version }}
           format: spdx-json
 
-      - name: Upload API SBOM artifact
+      - name: Upload SBOM artifact
+        if: matrix.changed == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: sbom-api
-          path: sbom.spdx.json
-
-  docker-db:
-    runs-on: ubuntu-latest
-    needs: check-changes
-    if: needs.check-changes.outputs.db-changed == 'true'
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Debug - List repository structure
-        run: |
-          echo "Repository root contents:"
-          ls -la
-          echo ""
-          echo "Database directory contents:"
-          ls -la database/ || echo "database/ directory not found"
-          echo ""
-          echo "API directory contents:"
-          ls -la api/ || echo "api/ directory not found"
-          echo ""
-          echo "Looking for Dockerfiles:"
-          find . -name "Dockerfile" -type f
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push multi-arch database Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./database
-          platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6,linux/386,linux/ppc64le,linux/s390x
-          push: true
-          tags: |
-            ghcr.io/${{ needs.check-changes.outputs.repo-lower }}-db:${{ needs.check-changes.outputs.version }}
-            ghcr.io/${{ needs.check-changes.outputs.repo-lower }}-db:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Generate database SBOM
-        uses: anchore/sbom-action@v0
-        with:
-          image: ghcr.io/${{ needs.check-changes.outputs.repo-lower }}-db:${{ needs.check-changes.outputs.version }}
-          format: spdx-json
-
-      - name: Upload database SBOM artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: sbom-db
+          name: sbom-${{ matrix.component }}
           path: sbom.spdx.json
