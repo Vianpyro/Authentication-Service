@@ -10,13 +10,6 @@ from pydantic import BaseModel, Field
 
 from .common import CommonFieldTypes
 
-__all__ = [
-    "AppCreate",
-    "AppCreateResponse",
-    "AppDelete",
-    "AppDeleteResponse",
-]
-
 
 class AppFieldTypes:
     """Reusable field types for application schemas."""
@@ -32,7 +25,7 @@ class AppFieldTypes:
         ),
     ]
 
-    CreatedAt = CommonFieldTypes.CreatedAt
+    CreatedAt = CommonFieldTypes.Timestamp
 
     Id = CommonFieldTypes.UUID
 

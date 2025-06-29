@@ -4,7 +4,12 @@ Application endpoints for the API.
 This module provides FastAPI endpoints for registering applications in the authentication database.
 """
 
-from app.routes.v1.schemas.application import *
+from app.routes.v1.schemas.application import (
+    AppCreate,
+    AppCreateResponse,
+    AppDelete,
+    AppDeleteResponse,
+)
 from app.utility.database import get_db
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import text
