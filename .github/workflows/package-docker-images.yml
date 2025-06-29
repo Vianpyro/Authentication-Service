@@ -136,6 +136,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Debug - List repository structure
+        run: |
+          echo "Repository root contents:"
+          ls -la
+          echo ""
+          echo "Database directory contents:"
+          ls -la database/ || echo "database/ directory not found"
+          echo ""
+          echo "API directory contents:"
+          ls -la api/ || echo "api/ directory not found"
+          echo ""
+          echo "Looking for Dockerfiles:"
+          find . -name "Dockerfile" -type f
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
