@@ -2,6 +2,7 @@
 name: Lint
 
 permissions:
+  actions: write
   contents: write
   packages: read
   statuses: write
