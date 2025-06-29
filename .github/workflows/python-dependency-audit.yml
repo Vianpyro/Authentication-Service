@@ -1,0 +1,42 @@
+name: Python Dependencies Audit
+
+permissions:
+  contents: read
+
+on:
+  push:
+    paths:
+      - api/requirements.txt
+  pull_request:
+    paths:
+      - api/requirements.txt
+  schedule:
+    - cron: '0 4 * * 1' # Every Monday at 4:00 UTC
+  workflow_dispatch:
+
+jobs:
+  pip-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-audit
+
+      - name: Run pip-audit
+        run: |
+          pip-audit -r api/requirements.txt -S -f markdown > pip-audit-report.md
+          echo "## 🔐 Python Dependencies Audit Report" >> "$GITHUB_STEP_SUMMARY"
+          if [ -s pip-audit-report.md ]; then
+            cat pip-audit-report.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No known vulnerabilities found" >> "$GITHUB_STEP_SUMMARY"
+          fi

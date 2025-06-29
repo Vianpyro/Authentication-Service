@@ -1,0 +1,29 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: FastAPI",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/api/app/main.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/api",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/api"
+            },
+            "args": [],
+            "preLaunchTask": "Full Database Rebuild"
+        },
+        {
+            "name": "Python: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/api",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/api"
+            }
+        }
+    ]
+}

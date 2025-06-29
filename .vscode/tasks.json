@@ -2,6 +2,59 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "Start Database",
+            "type": "shell",
+            "command": "[ -S /run/postgresql/.s.PGSQL.5432 ] || pg_ctl -D $PGDATA -o '-k /run/postgresql' -l /tmp/pg.log start",
+            "problemMatcher": [],
+            "isBackground": false,
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Flatten SQL Files",
+            "type": "shell",
+            "command": "scripts/flatten-sql.sh",
+            "dependsOn": ["Start Database"],
+            "options": {
+                "cwd": "${workspaceFolder}/database"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Rebuild Database",
+            "type": "shell",
+            "command": "scripts/rebuild-db.sh",
+            "args": ["${input:db_username}", "${input:db_name}"],
+            "dependsOn": ["Flatten SQL Files"],
+            "options": {
+                "cwd": "${workspaceFolder}/database"
+            },
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "Stop Database",
+            "type": "shell",
+            "command": "pg_ctl -D $PGDATA stop || true",
+            "problemMatcher": []
+        },
+        {
+            "label": "Connect to Database",
+            "type": "shell",
+            "command": "psql -h /run/postgresql -U ${input:db_username} -d ${input:db_name}",
+            "problemMatcher": [],
+            "presentation": {
+                "close": true
+            }
+        },
+        {
             "label": "Delete old Git branches",
             "type": "shell",
             "command": "git fetch --prune && git fetch -p ; git branch -r | awk '{print $1}' | egrep -v -f /dev/fd/0 <(git branch -vv | grep origin) | awk '{print $1}' | xargs git branch -D",
@@ -9,6 +62,173 @@
             "presentation": {
                 "showReuseMessage": false
             }
+        },
+        {
+            "label": "Full Database Rebuild",
+            "dependsOn": ["Start Database", "Flatten SQL Files", "Rebuild Database"],
+            "dependsOrder": "sequence",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Run Unit Tests",
+            "type": "shell",
+            "command": "pg_prove -Q -d ${input:db_name} -U ${input:db_username} sql/tests/*.test.sql",
+            "dependsOn": ["Full Database Rebuild"],
+            "problemMatcher": [],
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "options": {
+                "cwd": "${workspaceFolder}/database"
+            }
+        },
+        {
+            "label": "Lint SQL File",
+            "type": "shell",
+            "command": "sqlfluff fix '${file}' -v",
+            "problemMatcher": [],
+            "group": {
+                "kind": "none",
+                "isDefault": true
+            },
+            "presentation": {
+                "close": true
+            },
+            "options": {
+                "cwd": "${workspaceFolder}/database"
+            }
+        },
+        {
+            "label": "Build Docker Image",
+            "type": "shell",
+            "command": "docker build -t ${input:docker_image_name} .",
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "panel": "shared",
+                "close": true
+            },
+            "options": {
+                "cwd": "${workspaceFolder}/database"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Run Docker Container",
+            "type": "shell",
+            "command": "docker run -d -p 5432:5432 --name ${input:docker_container_name} --env-file .env --security-opt no-new-privileges:true --cap-drop=ALL --cap-add=NET_BIND_SERVICE ${input:docker_image_name}",
+            "presentation": {
+                "panel": "shared",
+                "close": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Remove Docker Container",
+            "type": "shell",
+            "command": "docker stop ${input:docker_container_name} ; docker rm ${input:docker_container_name}",
+            "presentation": {
+                "panel": "shared",
+                "close": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Reset Docker Container",
+            "type": "shell",
+            "dependsOn": ["Remove Docker Container", "Build Docker Image", "Run Docker Container"],
+            "presentation": {
+                "panel": "shared",
+                "close": true
+            },
+            "dependsOrder": "sequence",
+            "problemMatcher": []
+        },
+        {
+            "label": "Run all tests",
+            "type": "shell",
+            "command": "python3 -m pytest tests",
+            "group": "build",
+            "presentation": {
+                "close": true
+            },
+            "options": {
+                "cwd": "${workspaceFolder}/api",
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder}/api"
+                }
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Run file tests",
+            "type": "shell",
+            "command": "python3 -m pytest '${file}' -v -x",
+            "group": {
+                "kind": "test"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}/api",
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder}/api"
+                }
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Start FastAPI server",
+            "type": "shell",
+            "command": "uvicorn app.main:app --reload",
+            "presentation": {
+                "panel": "dedicated",
+                "close": true
+            },
+            "options": {
+                "cwd": "${workspaceFolder}/api",
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder}/api"
+                }
+            },
+            "problemMatcher": []
         }
-    ]
+    ],
+    "inputs": [
+        {
+            "id": "db_username",
+            "type": "promptString",
+            "description": "Enter the database username",
+            "default": "vscode"
+        },
+        {
+            "id": "db_name",
+            "type": "promptString",
+            "description": "Enter the database name",
+            "default": "authentication-service"
+        },
+        {
+            "id": "docker_image_name",
+            "type": "promptString",
+            "description": "Enter the Docker image name",
+            "default": "authentication-service-database-image"
+        },
+        {
+            "id": "docker_container_name",
+            "type": "promptString",
+            "description": "Enter the Docker container name",
+            "default": "authentication-service-database-container"
+        }
+    ],
+    "options": {
+        "env": {
+            "FLATTEN_SQL_DIR": "${workspaceFolder}/database/.tmp/flattened-sql"
+        },
+        "cwd": "${workspaceFolder}/database"
+    }
 }

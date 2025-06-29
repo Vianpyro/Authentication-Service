@@ -1,12 +1,48 @@
 {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.formatOnSave": true,
     "editor.insertSpaces": true,
     "editor.tabSize": 4,
     "files.insertFinalNewline": true,
     "files.trimFinalNewlines": true,
-    "files.trimTrailingWhitespace": false,
+    "files.trimTrailingWhitespace": true,
     "[yaml]": {
         "editor.tabSize": 2
+    },
+    "sqltools.connections": [
+        {
+            "name": "Authentication-Service",
+            "server": "localhost",
+            "driver": "PostgreSQL",
+            "port": 5432,
+            "database": "authentication-service",
+            "username": "vscode",
+            "askForPassword": false,
+            "password": "test"
+        }
+    ],
+    "python.analysis.extraPaths": ["./api"],
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/.pytest_cache": true,
+        "**/*.egg-info": true
+    },
+    "[python]": {
+        "editor.rulers": [120],
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "always"
+        },
+        "editor.formatOnSave": true
+    },
+    "isort.args": ["--profile", "black"],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "triggerTaskOnSave.tasks": {
+        "Lint SQL File": ["database/sql/**/*.sql"],
+        "Run file tests": ["tests/**/test_*.py"],
+        "Run all tests": ["app/**/*.py", "!tests/**"]
+    },
+    "[sql]": {
+        "editor.defaultFormatter": "mtxr.sqltools"
     }
 }
