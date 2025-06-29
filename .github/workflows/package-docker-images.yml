@@ -140,3 +140,10 @@ jobs:
         with:
           image: ghcr.io/${{ needs.check-changes.outputs.repo-lower }}-${{ matrix.component }}:${{ needs.check-changes.outputs.version }}
           format: spdx-json
+
+      - name: Upload SBOM artifact
+        if: matrix.changed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ matrix.component }}
+          path: sbom.spdx.json
