@@ -32,4 +32,7 @@ jobs:
           pip install pip-audit
 
       - name: Run pip-audit
-        run: pip-audit -r api/requirements.txt
+        run: |
+          pip-audit -r api/requirements.txt -S -f markdown > audit-report.md
+          echo "## 🔐 Python Dependencies Audit Report" >> $GITHUB_STEP_SUMMARY
+          cat audit-report.md >> $GITHUB_STEP_SUMMARY
