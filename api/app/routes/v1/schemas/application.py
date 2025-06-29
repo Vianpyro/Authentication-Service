@@ -36,7 +36,7 @@ class AppFieldTypes:
             pattern=r"^[a-z0-9][a-z0-9_-]{1,48}[a-z0-9]$",
             min_length=3,
             max_length=50,
-            description="Application slug: 3-50 characters, lowercase letters, numbers, hyphens, and underscores. Must start and end with alphanumeric characters.",
+            description="Normalized application identifier",
             examples=["my-app", "user-service", "api_gateway", "service123"],
         ),
     ]

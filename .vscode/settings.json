@@ -30,7 +30,7 @@
     },
     "[python]": {
         "editor.rulers": [
-            80
+            120
         ],
         "editor.defaultFormatter": "ms-python.black-formatter",
         "editor.codeActionsOnSave": {
