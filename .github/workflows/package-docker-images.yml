@@ -93,8 +93,8 @@ jobs:
       matrix:
         include:
           - component: api
-            context: .
-            dockerfile: ./Dockerfile
+            context: ./api
+            dockerfile: ./api/Dockerfile
             changed: ${{ needs.check-changes.outputs.api-changed }}
           - component: db
             context: ./database
