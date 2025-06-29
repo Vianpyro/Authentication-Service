@@ -92,13 +92,11 @@ jobs:
       matrix:
         include:
           - component: api
-            context: .
-            dockerfile: ./Dockerfile
-            changed: ${{ needs.check-changes.outputs.api-changed }}
+            context: ./api
+            dockerfile: Dockerfile
           - component: db
             context: ./database
-            dockerfile: ./database/Dockerfile
-            changed: ${{ needs.check-changes.outputs.db-changed }}
+            dockerfile: Dockerfile
 
     steps:
       - uses: actions/checkout@v4
