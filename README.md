@@ -44,13 +44,41 @@ Authentication-Service/
    cd Authentication-Service
    ```
 
-2. **Open in VS Code Dev Container:**
+2. **Configure environment variables:**
+   ```bash
+   # Copy the example environment file
+   cp .env.example .env
+
+   # Edit the configuration
+   nano .env
+   ```
+
+   **Example `.env` file:**
+   ```properties
+   # Database Configuration
+   DB_PASSWORD=your_secure_password_here
+   POSTGRES_DB=authentication-service
+   POSTGRES_USER=postgres
+   POSTGRES_HOST=database
+   POSTGRES_PORT=5432
+
+   # API Configuration
+   API_PORT=8000
+
+   # Constructed URLs (optional - can be built in compose file)
+   DATABASE_URL=postgresql+asyncpg://postgres:${DB_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+   ```
+
+   > [!IMPORTANT]
+   > Change `DB_PASSWORD` to a secure password before running in production.
+
+3. **Open in VS Code Dev Container:**
    ```bash
    code .
    # When prompted, click "Reopen in Container"
    ```
 
-3. **Start the services:**
+4. **Start the services:**
    ```bash
    # The dev container automatically starts PostgreSQL
    # Start the API server using VS Code task or:
@@ -58,7 +86,7 @@ Authentication-Service/
    uvicorn app.main:app --reload
    ```
 
-4. **Access the services:**
+5. **Access the services:**
    - **API Documentation:** http://localhost:8000/docs
    - **API v1:** http://localhost:8000/api/v1
    - **Database Admin:** `"$BROWSER" "http://localhost:8080/admin/database"`
@@ -231,14 +259,19 @@ For complete API documentation, visit `/docs` when running the service.
 
 1. **Environment Variables:**
    ```bash
-   # Database
-   POSTGRES_USER=auth_service
-   POSTGRES_PASSWORD=secure_random_password
-   POSTGRES_DB=authentication-service
+   # Create production environment file
+   cp .env.example .env.production
 
-   # API
-   DATABASE_URL=postgresql+asyncpg://auth_service:password@db:5432/authentication-service
-   SECRET_KEY=your-secret-key-here
+   # Required variables for production:
+   DB_PASSWORD=secure_random_password_here
+   POSTGRES_DB=authentication-service
+   POSTGRES_USER=auth_service
+   POSTGRES_HOST=database
+   POSTGRES_PORT=5432
+   API_PORT=8000
+
+   # Optional: Pre-constructed database URL
+   DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${DB_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
    ```
 
 2. **Docker Compose Production:**
