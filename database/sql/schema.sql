@@ -109,11 +109,15 @@ CREATE TABLE sessions (
 
     ip_address INET CHECK (ip_address IS NULL OR family(ip_address) IN (4, 6)),
     user_agent USER_AGENT_STR,
+    device_fingerprint UUID REFERENCES device_fingerprints (id) ON DELETE SET NULL,
 
     created_at NON_FUTURE_TIMESTAMP NOT NULL DEFAULT current_timestamp,
     expires_at NON_FUTURE_TIMESTAMP NOT NULL DEFAULT current_timestamp + INTERVAL '15 minutes',
+    last_activity_at NON_FUTURE_TIMESTAMP NOT NULL DEFAULT current_timestamp,
 
-    is_active BOOLEAN NOT NULL DEFAULT TRUE
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+
+    CONSTRAINT unique_active_token UNIQUE (token) WHERE is_active = TRUE
 );
 
 ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
