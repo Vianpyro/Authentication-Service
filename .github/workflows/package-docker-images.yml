@@ -108,7 +108,7 @@ jobs:
             context: ./api
             dockerfile: Dockerfile
             changed: 'true' # For debugging purposes
-          - component: db
+          - component: database
             context: ./database
             dockerfile: Dockerfile
             changed: 'true' # For debugging purposes
@@ -137,7 +137,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ${{ matrix.context }}
-          platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6,linux/386,linux/ppc64le,linux/s390x
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             ghcr.io/${{ needs.check-changes.outputs.repo-lower }}-${{ matrix.component }}:${{ needs.check-changes.outputs.version }}
@@ -151,10 +151,5 @@ jobs:
         with:
           image: ghcr.io/${{ needs.check-changes.outputs.repo-lower }}-${{ matrix.component }}:${{ needs.check-changes.outputs.version }}
           format: spdx-json
-
-      - name: Upload SBOM artifact
-        if: matrix.changed == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: sbom-${{ matrix.component }}
-          path: sbom.spdx.json
+          upload-release-assets: false
+          artifact-name: sbom-${{ matrix.component }}-${{ needs.check-changes.outputs.version }}
