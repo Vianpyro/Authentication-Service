@@ -3,6 +3,7 @@ name: Package Docker Images for Authentication Service's API and Database
 
 permissions:
   packages: write
+  contents: write
 
 on:
   release:
