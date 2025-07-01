@@ -1,0 +1,155 @@
+---
+name: Package Docker Images for Authentication Service's API and Database
+
+permissions:
+  packages: write
+  contents: write
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  check-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      api-changed: ${{ steps.changes.outputs.api-changed }}
+      db-changed: ${{ steps.changes.outputs.db-changed }}
+      version: ${{ steps.version.outputs.tag }}
+      repo-lower: ${{ steps.repo.outputs.name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            # Use release tag, remove 'v' prefix if present
+            VERSION="${{ github.event.release.tag_name }}"
+            VERSION="${VERSION#v}"
+          else
+            # Extract from version file
+            if [ -f "api/version.py" ]; then
+              VERSION=$(grep -oP '__version__\s*=\s*"\K[0-9]+\.[0-9]+\.[0-9]+' api/version.py)
+            else
+              # Create date-based version: YYYY.mm.dd.HHMM
+              DATE_VERSION=$(date +%Y.%m.%d.+%H%M)
+              VERSION="${DATE_VERSION}"
+            fi
+          fi
+          echo "tag=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Building version: $VERSION"
+
+      - name: Normalize repository name
+        id: repo
+        run: |
+          echo "name=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "api-changed=true" >> "$GITHUB_OUTPUT"
+            echo "db-changed=true" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "release" ]; then
+            # Get the previous release tag
+            PREV_TAG=$(git tag --sort=-version:refname | grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+' | sed -n '2p')
+            if [ -z "$PREV_TAG" ]; then
+              echo "api-changed=true" >> "$GITHUB_OUTPUT"
+              echo "db-changed=true" >> "$GITHUB_OUTPUT"
+            else
+              # Check if any .py files in api/ folder changed since previous release
+              API_CHANGED_FILES=$(git diff --name-only "$PREV_TAG"..HEAD | grep '^api/.*\.py$' || true)
+              if [ -n "$API_CHANGED_FILES" ]; then
+                echo "api-changed=true" >> "$GITHUB_OUTPUT"
+                echo "Changed API files:"
+                echo "$API_CHANGED_FILES"
+              else
+                echo "api-changed=false" >> "$GITHUB_OUTPUT"
+                echo "No .py files changed in api/ folder"
+              fi
+              # Check if any database files changed since previous release
+              DB_CHANGED_FILES=$(git diff --name-only "$PREV_TAG"..HEAD | grep -E '^(database/|db/).*\.(sql|py|sh|dockerfile|Dockerfile)$' || true)
+              if [ -n "$DB_CHANGED_FILES" ]; then
+                echo "db-changed=true" >> "$GITHUB_OUTPUT"
+                echo "Changed database files:"
+                echo "$DB_CHANGED_FILES"
+              else
+                echo "db-changed=false" >> "$GITHUB_OUTPUT"
+                echo "No database files changed"
+              fi
+            fi
+          fi
+
+      - name: Check if Dockerfile exists
+        id: dockerfile-check
+        run: |
+          if [ ! -f "api/Dockerfile" ]; then
+            echo "Dockerfile not found in api/ directory"
+            exit 1
+          fi
+          if [ ! -f "database/Dockerfile" ]; then
+            echo "Dockerfile not found in database/ directory"
+            exit 1
+          fi
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: check-changes
+    # if: needs.check-changes.outputs.api-changed == 'true' || needs.check-changes.outputs.db-changed == 'true'
+
+    strategy:
+      matrix:
+        include:
+          - component: api
+            context: ./api
+            dockerfile: Dockerfile
+            changed: 'true' # For debugging purposes
+          - component: database
+            context: ./database
+            dockerfile: Dockerfile
+            changed: 'true' # For debugging purposes
+
+    steps:
+      - uses: actions/checkout@v4
+        if: matrix.changed == 'true'
+
+      - name: Set up QEMU
+        if: matrix.changed == 'true'
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        if: matrix.changed == 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        if: matrix.changed == 'true'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push multi-arch Docker image
+        if: matrix.changed == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ needs.check-changes.outputs.repo-lower }}-${{ matrix.component }}:${{ needs.check-changes.outputs.version }}
+            ghcr.io/${{ needs.check-changes.outputs.repo-lower }}-${{ matrix.component }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Generate SBOM
+        if: matrix.changed == 'true'
+        uses: anchore/sbom-action@v0
+        with:
+          image: ghcr.io/${{ needs.check-changes.outputs.repo-lower }}-${{ matrix.component }}:${{ needs.check-changes.outputs.version }}
+          format: spdx-json
+          upload-release-assets: false
+          artifact-name: sbom-${{ matrix.component }}-${{ needs.check-changes.outputs.version }}

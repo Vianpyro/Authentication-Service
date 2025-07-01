@@ -1,0 +1,45 @@
+services:
+  database:
+    build: ./database
+    environment:
+      POSTGRES_DB: authentication-service
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - auth_service_db:/var/lib/postgresql/data
+    networks:
+      - auth_network
+    restart: unless-stopped
+
+  api:
+    build: ./api
+    depends_on:
+      - database
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:${DB_PASSWORD}@database:5432/authentication-service
+    ports:
+      - "8000:8000"
+    networks:
+      - auth_network
+    restart: unless-stopped
+
+  pg_backup:
+    image: postgres:15
+    depends_on:
+      - database
+    environment:
+      PGPASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./backups:/backup
+    networks:
+      - auth_network
+    command: pg_dump -h database -U postgres -d authentication-service -f ./backup/auth_db_$(date +%Y%m%d_%H%M%S).sql
+    profiles:
+      - backup
+
+volumes:
+  auth_service_db:
+    driver: local
+
+networks:
+  auth_network:
