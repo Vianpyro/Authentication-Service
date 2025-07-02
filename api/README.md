@@ -215,7 +215,7 @@ The API can be deployed using:
 2. Add appropriate Pydantic schemas for new endpoints
 3. Include proper error handling and HTTP status codes
 4. Write tests for new functionality
-5. Update this README when adding new features
+5. Update this readme when adding new features
 
 ## 📝 API Documentation
 

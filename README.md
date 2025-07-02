@@ -237,7 +237,7 @@ POST /api/v1/auth/2fa/verify
 }
 ```
 
-### Session Management
+### Session Management API
 
 ```bash
 # Refresh token
@@ -405,7 +405,7 @@ The project includes tests for:
 - **Security First:** All changes must maintain security principles
 - **Tenant Isolation:** Preserve multi-tenant data separation
 - **Backward Compatibility:** API changes require version bumps
-- **Documentation:** Update README files for significant changes
+- **Documentation:** Update readme files for significant changes
 
 ## 📋 Roadmap
 

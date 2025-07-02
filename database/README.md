@@ -6,7 +6,7 @@ This is the PostgreSQL database component of the Authentication Service. It prov
 
 The database follows a security-first design with tenant isolation:
 
-```
+```sh
 database/
 ├── sql/
 │   ├── schema.sql           # Main database schema
@@ -151,7 +151,7 @@ Three distinct roles with minimal privileges:
    - Cleanup operations
    - Security event logging
 
-3. **VSCode Role** ([`sql/roles/vscode.sql`](sql/roles/vscode.sql))
+3. **Visual Studio Code Role** ([`sql/roles/vscode.sql`](sql/roles/vscode.sql))
    - Development environment access
    - **Development only** - should not exist in production
 
@@ -302,7 +302,7 @@ GROUP BY event_type;
 
 1. **SQL Standards:** Follow PostgreSQL best practices
 2. **Security First:** All changes must maintain tenant isolation
-3. **Documentation:** Update README for schema changes
+3. **Documentation:** Update readme for schema changes
 4. **Testing:** Validate all functions and triggers
 5. **Migration Scripts:** Provide upgrade paths for schema changes
 
