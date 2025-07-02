@@ -5,6 +5,10 @@ This module provides Pydantic schemas for validating pending user-related data,
 such as user requests and responses.
 """
 
+from typing import Annotated
+
+from pydantic import BaseModel, Field
+
 from .application import AppFieldTypes
 from .common import CommonFieldTypes
 
@@ -29,3 +33,37 @@ class PendingUserTypes:
     UserAgent = CommonFieldTypes.UserAgent
 
     Token = CommonFieldTypes.Token
+
+
+class PendingUserCreate(BaseModel):
+    """Schema for creating a pending user."""
+
+    app_id: AppFieldTypes.Id
+
+    confirmation_url: Annotated[
+        str,
+        Field(
+            title="Confirmation URL",
+            description="The URL to confirm the pending user registration.",
+        ),
+    ]
+
+    email: Annotated[
+        str,
+        Field(
+            title="Email",
+            description="The email address of the pending user.",
+            examples=["user@example.com"],
+        ),
+    ]
+
+
+class PendingUserCreateResponse(BaseModel):
+    """Response schema for pending user creation."""
+
+    success: bool = Field(
+        default=True,
+        title="Success",
+        description="Indicates whether the pending user was successfully created.",
+        examples=[True, False],
+    )
