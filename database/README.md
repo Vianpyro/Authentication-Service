@@ -39,6 +39,7 @@ database/
 ### Docker Deployment (Recommended)
 
 1. **Build the container:**
+
    ```bash
    docker build -t auth-database .
    ```
@@ -57,6 +58,7 @@ database/
 ### Manual Setup
 
 1. **Initialize the database:**
+
    ```bash
    # Flatten SQL files
    ./scripts/flatten-sql.sh
@@ -77,21 +79,27 @@ database/
 ### Core Tables
 
 #### Applications
+
 Stores registered applications using the authentication service:
+
 - **Primary Key:** `id` (UUID)
 - **Unique Fields:** `slug` (application identifier)
 - **Validation:** URL format validation, slug pattern matching
 - **Security:** Cascading deletes to maintain referential integrity
 
 #### Users
+
 Main user table with encrypted data storage:
+
 - **Tenant Isolation:** Row-level security by `app_id`
 - **Encryption:** Email and phone data encrypted at rest
 - **Hashing:** SHA-256 hashes for searchable encrypted fields
 - **Security Features:** Account locking, suspension, deletion scheduling
 
 #### Sessions
+
 Opaque session token management:
+
 - **Token Types:** Access and refresh tokens
 - **Security:** IP address tracking, user agent logging
 - **Expiration:** Automatic cleanup of expired sessions
@@ -100,18 +108,23 @@ Opaque session token management:
 ### Security Tables
 
 #### Device Fingerprints
+
 Device tracking and recognition:
+
 - **Fingerprinting:** SHA-256 hashed device signatures
 - **Tracking:** Last seen timestamps, device naming
 - **Security:** Per-user device limits and validation
 
 #### Multi-Factor Authentication
+
 Comprehensive 2FA support:
+
 - **TOTP Secrets:** Encrypted TOTP secrets with key versioning
 - **Backup Codes:** Hashed backup codes for recovery
 - **Security Events:** Audit trail for 2FA changes
 
 #### Audit and Security
+
 - **Login Attempts:** Brute force detection and logging
 - **Security Events:** Comprehensive security event tracking
 - **IP Blocklist:** Automated and manual IP blocking
@@ -132,21 +145,26 @@ CREATE DOMAIN non_future_timestamp AS TIMESTAMPTZ CHECK (value <= current_timest
 ## 🔐 Security Features
 
 ### Row-Level Security (RLS)
+
 All user data tables implement tenant isolation:
+
 - **Users Table:** `app_id = current_setting('app.id')::UUID`
 - **Device Fingerprints:** Tenant-specific device access
 - **Security Events:** Isolated audit logs per application
 - **Sessions:** Application-specific session management
 
 ### Database Roles
+
 Three distinct roles with minimal privileges:
 
 1. **API Role** ([`sql/roles.sql`](sql/roles.sql))
+
    - Application-level database access
    - Read/write permissions for user operations
    - Function execution privileges
 
 2. **Cron Role** ([`sql/roles/cron.sql`](sql/roles/cron.sql))
+
    - Automated maintenance tasks
    - Cleanup operations
    - Security event logging
@@ -158,11 +176,13 @@ Three distinct roles with minimal privileges:
 ### Automated Security Functions
 
 #### Trigger-Based Security
+
 - **App ID Validation:** [`validate_app_id_match`](sql/functions/applications/validate_app_id_match.sql) ensures session consistency
 - **Timestamp Updates:** [`update_updated_at_timestamp`](sql/functions/utilities/update_updated_at.sql) maintains audit trails
 - **Login Recovery:** [`clear_scheduled_deletion_on_login`](sql/functions/utilities/clear_scheduled_deletion_on_login.sql) prevents accidental deletions
 
 #### Application Management
+
 - **Registration:** [`register_application`](sql/functions/applications/register_application.sql) with validation
 - **Deletion:** [`delete_application`](sql/functions/applications/delete_application.sql) with cascading cleanup
 - **Lookup:** [`get_application_name`](sql/functions/applications/get_application_name.sql) for display purposes
@@ -170,13 +190,18 @@ Three distinct roles with minimal privileges:
 ## 🔄 Automated Maintenance
 
 ### Frequent Cleanup (5 minutes)
+
 The [`5_min.sql`](scripts/cron/5_min.sql) script handles:
+
 - **Account Locking:** Automatic suspension after 5 failed attempts in 15 minutes
 - **Brute Force Protection:** IP-based rate limiting
 
 ### Daily Maintenance (24 hours)
+
 The [`1_day.sql`](scripts/cron/1_day.sql) script performs:
+
 - **Expired Data Cleanup:**
+
   - Pending user registrations
   - Expired sessions and tokens
   - Password reset tokens
@@ -188,6 +213,7 @@ The [`1_day.sql`](scripts/cron/1_day.sql) script performs:
   - Security event logging for sanitization
 
 ### Cron Job Setup
+
 ```bash
 # Production cron configuration
 */5 * * * * /usr/local/bin/5_min.sh
@@ -197,6 +223,7 @@ The [`1_day.sql`](scripts/cron/1_day.sql) script performs:
 ## 🛠️ Development
 
 ### Database Rebuilding
+
 Use the provided scripts for development:
 
 ```bash
@@ -208,12 +235,14 @@ Use the provided scripts for development:
 ```
 
 ### SQL Development Standards
+
 - **Linting:** SQLFluff configuration in [`.sqlfluff`](.sqlfluff)
 - **Line Length:** 160 characters maximum
 - **Dialect:** PostgreSQL-specific features encouraged
 - **Security:** All functions must validate inputs
 
 ### Testing
+
 ```bash
 # Test database functions
 psql -U vscode -d authentication-service -f test_functions.sql
@@ -225,13 +254,16 @@ psql -U vscode -d authentication-service -c "\d+ users"
 ## 📊 Performance Optimizations
 
 ### Indices
+
 Strategic indexing for common queries:
+
 - **User Lookup:** `idx_users_email_app` on `(email_hash, app_id)`
 - **Session Management:** `idx_sessions_user_expires` on `(user_id, expires_at)`
 - **Security Monitoring:** `idx_login_attempts_app_time` on `(app_id, attempted_at DESC)`
 - **Device Tracking:** `idx_fingerprint_user_seen` on `(user_id, last_seen_at DESC)`
 
 ### Connection Pooling
+
 - **Async Support:** Designed for asyncpg driver
 - **Pool Management:** Configurable connection limits
 - **Health Checks:** Automatic connection validation
@@ -241,6 +273,7 @@ Strategic indexing for common queries:
 ### Production Considerations
 
 1. **Environment Variables:**
+
    ```bash
    POSTGRES_USER=auth_service
    POSTGRES_PASSWORD=secure_random_password
@@ -248,6 +281,7 @@ Strategic indexing for common queries:
    ```
 
 2. **Volume Mounting:**
+
    ```bash
    # Persistent data storage
    docker run -v /host/db-data:/var/lib/postgresql/data auth-database
@@ -259,6 +293,7 @@ Strategic indexing for common queries:
    - Enable SSL/TLS for external connections
 
 ### Backup Strategy
+
 ```bash
 # Daily backups
 pg_dump -U auth_service authentication-service > backup_$(date +%Y-%m-%d).sql
@@ -273,6 +308,7 @@ psql -U auth_service -d authentication-service < backup_2025-01-29.sql
 ## 🔍 Monitoring
 
 ### Key Metrics to Monitor
+
 - **Connection Usage:** Active connections vs. pool size
 - **Query Performance:** Slow query log analysis
 - **Security Events:** Failed login attempts, account lockouts
@@ -280,6 +316,7 @@ psql -U auth_service -d authentication-service < backup_2025-01-29.sql
 - **Maintenance Jobs:** Cron job execution status
 
 ### Useful Queries
+
 ```sql
 -- Check tenant isolation
 SELECT app_id, COUNT(*) FROM users GROUP BY app_id;
@@ -308,21 +345,23 @@ GROUP BY event_type;
 
 ## 📚 Additional Resources
 
-- **PostgreSQL Documentation:** https://www.postgresql.org/docs/
-- **Row-Level Security:** https://www.postgresql.org/docs/current/ddl-rowsecurity.html
-- **Security Best Practices:** https://www.postgresql.org/docs/current/security.html
+- **PostgreSQL Documentation:** <https://www.postgresql.org/docs/>
+- **Row-Level Security:** <https://www.postgresql.org/docs/current/ddl-rowsecurity.html>
+- **Security Best Practices:** <https://www.postgresql.org/docs/current/security.html>
 
 ## 🔧 Troubleshooting
 
 ### Common Issues
 
 1. **Permission Denied:**
+
    ```bash
    # Check role assignments
    psql -c "\du" authentication-service
    ```
 
 2. **RLS Policy Violations:**
+
    ```sql
    -- Check current app.id setting
    SELECT current_setting('app.id', true);
@@ -335,6 +374,7 @@ GROUP BY event_type;
    ```
 
 ### Database Browser Access
+
 ```bash
 # Open database in browser-based admin tool
 "$BROWSER" "http://localhost:8080/admin/database"

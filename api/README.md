@@ -36,6 +36,7 @@ api/
 ### Installation
 
 1. **Install dependencies:**
+
    ```bash
    pip install -r requirements-dev.txt
    ```
@@ -47,6 +48,7 @@ api/
 ### Running the API
 
 1. **Development server:**
+
    ```bash
    # From the api directory
    uvicorn app.main:app --reload
@@ -55,6 +57,7 @@ api/
    ```
 
 2. **Using the debugger:**
+
    - Use the Visual Studio Code launch configuration "Python: FastAPI" for debugging
    - This will also rebuild the database before starting
 
@@ -64,16 +67,18 @@ api/
    ```
 
 The API will be available at:
-- **Main API:** http://localhost:8000
-- **API v1:** http://localhost:8000/api/v1
-- **Interactive docs:** http://localhost:8000/docs
-- **OpenAPI spec:** http://localhost:8000/openapi.json
+
+- **Main API:** <http://localhost:8000>
+- **API v1:** <http://localhost:8000/api/v1>
+- **Interactive docs:** <http://localhost:8000/docs>
+- **OpenAPI spec:** <http://localhost:8000/openapi.json>
 
 ## 📚 API Structure
 
 ### Versioning Strategy
 
 The API uses URL-based versioning to ensure backward compatibility:
+
 - `/` - Root endpoints (non-versioned)
 - `/api/v1/` - Version 1 endpoints
 - `/api/v2/` - Version 2 endpoints (planned)
@@ -81,9 +86,11 @@ The API uses URL-based versioning to ensure backward compatibility:
 ### Current Endpoints
 
 #### Root Endpoints
+
 - `GET /` - Welcome message
 
 #### Application Management (`/api/v1/app/`)
+
 - `POST /api/v1/app/register` - Register a new application
 - `DELETE /api/v1/app/` - Delete an application
 
@@ -92,6 +99,7 @@ The API uses URL-based versioning to ensure backward compatibility:
 The API uses a sophisticated schema system with reusable field types:
 
 1. **Common Field Types** ([`app.routes.v1.schemas.common`](app/routes/v1/schemas/common.py))
+
    - Shared field definitions (UUIDs, timestamps, hashes, etc.)
    - Consistent validation across all schemas
 
@@ -107,6 +115,7 @@ The API uses a sophisticated schema system with reusable field types:
 ### Code Style
 
 The project follows strict formatting and linting standards:
+
 - **Black** for Python code formatting (120 character line limit)
 - **isort** for import organization
 - **Pytest** for testing
@@ -116,6 +125,7 @@ The project follows strict formatting and linting standards:
 The project includes comprehensive Visual Studio Code configuration:
 
 1. **Tasks available:**
+
    - "Run all tests" - Execute the full test suite
    - "Run file tests" - Test the current file
    - "Start FastAPI server" - Launch development server
@@ -127,6 +137,7 @@ The project includes comprehensive Visual Studio Code configuration:
 ### Database Integration
 
 The API connects to PostgreSQL using:
+
 - **SQLAlchemy** with async support
 - **asyncpg** driver for high performance
 - Connection pooling and health checks
@@ -162,11 +173,13 @@ python -m pytest tests/test_example.py
 The API implements several security measures:
 
 1. **Input Validation**
+
    - Pydantic schemas with strict field validation
    - Pattern matching for sensitive fields (hashes, tokens)
    - Length limits and type checking
 
 2. **Database Security**
+
    - Row-level security policies
    - Parameterized queries to prevent SQL injection
    - Tenant isolation through app_id validation
@@ -180,6 +193,7 @@ The API implements several security measures:
 ## 📦 Dependencies
 
 ### Production Dependencies
+
 - **FastAPI** - Modern web framework
 - **SQLAlchemy** - Database ORM with async support
 - **asyncpg** - PostgreSQL async driver
@@ -189,6 +203,7 @@ The API implements several security measures:
 - **pyotp** - TOTP 2FA implementation
 
 ### Development Dependencies
+
 - **pytest** - Testing framework
 - **pytest-asyncio** - Async test support
 - **build** - Package building
@@ -198,6 +213,7 @@ The API implements several security measures:
 The API can be deployed using:
 
 1. **Docker** (recommended)
+
    ```bash
    docker build -t auth-api .
    docker run -p 8000:8000 auth-api

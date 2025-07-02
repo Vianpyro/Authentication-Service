@@ -39,12 +39,14 @@ Authentication-Service/
 ### Development Setup
 
 1. **Clone the repository:**
+
    ```bash
    git clone https://github.com/your-org/Authentication-Service.git
    cd Authentication-Service
    ```
 
 2. **Configure environment variables:**
+
    ```bash
    # Copy the example environment file
    cp .env.example .env
@@ -54,6 +56,7 @@ Authentication-Service/
    ```
 
    **Example `.env` file:**
+
    ```properties
    # Database Configuration
    DB_PASSWORD=your_secure_password_here
@@ -73,12 +76,14 @@ Authentication-Service/
 > Change `DB_PASSWORD` to a secure password before running in production.
 
 3. **Open in Visual Studio Code Dev Container:**
+
    ```bash
    code .
    # When prompted, click "Reopen in Container"
    ```
 
 4. **Start the services:**
+
    ```bash
    # The dev container automatically starts PostgreSQL
    # Start the API server using Visual Studio Code task or:
@@ -87,30 +92,34 @@ Authentication-Service/
    ```
 
 5. **Access the services:**
-   - **API Documentation:** http://localhost:8000/docs
-   - **API v1:** http://localhost:8000/api/v1
+   - **API Documentation:** <http://localhost:8000/docs>
+   - **API v1:** <http://localhost:8000/api/v1>
    - **Database Admin:** `"$BROWSER" "http://localhost:8080/admin/database"`
 
 ## 🔐 Security Features
 
 ### Multi-Tenant Architecture
+
 - **Row-Level Security (RLS):** Complete tenant isolation at the database level
 - **Application Registration:** Secure app-based access control
 - **API Key Management:** Per-application authentication
 
 ### User Security
+
 - **Password Hashing:** Argon2id with configurable parameters
 - **Multi-Factor Authentication:** TOTP-based 2FA with backup codes
 - **Device Fingerprinting:** Device recognition and management
 - **Account Protection:** Brute force protection, account locking
 
 ### Session Management
+
 - **Opaque Tokens:** Secure, database-backed session tokens
 - **Token Types:** Access and refresh token support
 - **IP Tracking:** Session hijacking detection
 - **Automatic Cleanup:** Expired session removal
 
 ### Database Security
+
 - **Encryption at Rest:** Sensitive data encrypted in database
 - **Audit Logging:** Comprehensive security event tracking
 - **Automated Cleanup:** Scheduled data sanitization
@@ -121,13 +130,16 @@ Authentication-Service/
 ### Available Services
 
 #### API Service ([`api/`](api/))
+
 FastAPI-based REST API with:
+
 - Versioned endpoints (`/api/v1/`, `/api/v2/`)
 - Pydantic schema validation
 - Async database operations
 - Comprehensive error handling
 
 **Key Commands:**
+
 ```bash
 cd api
 # Install dependencies
@@ -141,13 +153,16 @@ python -m pytest tests/ -v
 ```
 
 #### Database Service ([`database/`](database/))
+
 PostgreSQL database with:
+
 - Security-first schema design
 - Automated maintenance scripts
 - Custom domains and functions
 - Comprehensive indexing
 
 **Key Commands:**
+
 ```bash
 cd database
 # Rebuild database
@@ -165,16 +180,19 @@ docker build -t auth-database .
 The project includes comprehensive Visual Studio Code configuration:
 
 #### Tasks Available
+
 - **"Run all tests"** - Execute the full test suite
 - **"Run file tests"** - Test the current file
 - **"Start FastAPI server"** - Launch development server
 - **"Rebuild Database"** - Reset database to clean state
 
 #### Debug Configurations
+
 - **"Python: FastAPI"** - Debug the API with database rebuild
 - **"Python: Current File"** - Debug any Python file
 
 #### Extensions Included
+
 - Python support with linting and formatting
 - PostgreSQL syntax highlighting
 - REST Client for API testing
@@ -194,6 +212,7 @@ The project enforces strict code quality standards:
 ### Authentication Flow
 
 1. **Application Registration:**
+
    ```bash
    POST /api/v1/app/register
    {
@@ -204,6 +223,7 @@ The project enforces strict code quality standards:
    ```
 
 2. **User Registration:**
+
    ```bash
    POST /api/v1/users/register
    {
@@ -258,6 +278,7 @@ For complete API documentation, visit `/docs` when running the service.
 ### Production Environment
 
 1. **Environment Variables:**
+
    ```bash
    # Create production environment file
    cp .env.example .env.production
@@ -275,6 +296,7 @@ For complete API documentation, visit `/docs` when running the service.
    ```
 
 2. **Docker Compose Production:**
+
    ```yaml
    services:
      db:
@@ -291,7 +313,7 @@ For complete API documentation, visit `/docs` when running the service.
        environment:
          DATABASE_URL: postgresql+asyncpg://auth_service:${DB_PASSWORD}@db:5432/authentication-service
        ports:
-         - "8000:8000"
+         - '8000:8000'
        depends_on:
          - db
 
@@ -307,6 +329,7 @@ For complete API documentation, visit `/docs` when running the service.
 ### Health Checks
 
 Monitor service health:
+
 ```bash
 # API health
 curl http://localhost:8000/
@@ -320,6 +343,7 @@ docker exec auth-db pg_isready -U auth_service
 ### Automated Maintenance
 
 The database includes automated cleanup jobs:
+
 - **Every 5 minutes:** Account locking, brute force protection
 - **Daily:** Expired data cleanup, user lifecycle management
 
@@ -364,6 +388,7 @@ psql -U vscode -d authentication-service -f test_functions.sql
 ### Test Coverage
 
 The project includes tests for:
+
 - **API Endpoints:** Request/response validation
 - **Database Functions:** Security and business logic
 - **Authentication Flow:** End-to-end user journeys
@@ -374,16 +399,19 @@ The project includes tests for:
 ### Development Workflow
 
 1. **Create a feature branch:**
+
    ```bash
    git checkout -b feature/new-authentication-method
    ```
 
 2. **Make your changes:**
+
    - Follow existing code style and patterns
    - Add tests for new functionality
    - Update documentation as needed
 
 3. **Run quality checks:**
+
    ```bash
    # Format code
    black --line-length 120 api/
@@ -410,6 +438,7 @@ The project includes tests for:
 ## 📋 Roadmap
 
 ### Current Features ✅
+
 - Multi-tenant user authentication
 - Session management with opaque tokens
 - TOTP-based multi-factor authentication
@@ -418,6 +447,7 @@ The project includes tests for:
 - Automated security maintenance
 
 ### Planned Features 🚧
+
 - OAuth2/OIDC provider support
 - WebAuthn/FIDO2 authentication
 - Advanced rate limiting
@@ -426,6 +456,7 @@ The project includes tests for:
 - Metrics and analytics API
 
 ### Future Considerations 💭
+
 - Mobile SDK development
 - Federated identity support
 - Advanced threat detection
@@ -438,11 +469,13 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🆘 Support
 
 ### Documentation
+
 - **API Documentation:** Available at `/docs` when running
 - **Database Schema:** See [`database/README.md`](database/README.md)
 - **API Details:** See [`api/README.md`](api/README.md)
 
 ### Getting Help
+
 - **Issues:** Use GitHub Issues for bug reports and feature requests
 - **Discussions:** Use GitHub Discussions for questions and ideas
 - **Security:** Report security issues privately via email
@@ -452,6 +485,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 #### Common Issues
 
 1. **Database Connection Failed:**
+
    ```bash
    # Check if database is running
    docker ps | grep postgres
@@ -461,6 +495,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
    ```
 
 2. **API Import Errors:**
+
    ```bash
    # Ensure you're in the api directory
    cd api
@@ -474,6 +509,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
    ```
 
 #### Performance Issues
+
 - Check database Indices with `EXPLAIN ANALYZE`
 - Monitor connection pool usage
 - Review slow query logs
