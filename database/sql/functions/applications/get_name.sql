@@ -14,4 +14,4 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-GRANT EXECUTE ON PROCEDURE get_application_name TO api;
+GRANT EXECUTE ON FUNCTION get_application_name TO api;

@@ -75,7 +75,7 @@ CREATE TABLE tokens (
     app_id UUID REFERENCES applications (id) ON DELETE CASCADE,
 
     -- Email data (only needed for recovery email verification)
-    email_encrypted NON_EMPTY_TEXT REFERENCES users (recovery_email_encrypted) ON DELETE SET NULL,
+    email_encrypted NON_EMPTY_TEXT,
 
     created_at NON_FUTURE_TIMESTAMPTZ NOT NULL DEFAULT current_timestamp,
     expires_at NON_FUTURE_TIMESTAMPTZ,
@@ -110,10 +110,7 @@ CREATE TABLE pending_users (
     ip_address INET CHECK (ip_address IS NULL OR family(ip_address) IN (4, 6)),
     user_agent USER_AGENT_STR,
 
-    CONSTRAINT unique_pending_user_per_app UNIQUE (email_hash, app_id),
-    CONSTRAINT chk_token_is_email_verification CHECK (
-        (SELECT token_type FROM tokens WHERE id = token_id) = 'email_verification'
-    )
+    CONSTRAINT unique_pending_user_per_app UNIQUE (email_hash, app_id)
 );
 
 -- Device Fingerprints Table: Stores device fingerprints for users
@@ -123,7 +120,7 @@ CREATE TABLE device_fingerprints (
     app_id UUID NOT NULL REFERENCES applications (id) ON DELETE CASCADE,
 
     fingerprint_hash SHA_256_HASH NOT NULL,
-    device_name TEXT NOT NULL CHECK (char_length(device_name) <> '' AND char_length(device_name) <= 100),
+    device_name TEXT NOT NULL CHECK (device_name <> '' AND char_length(device_name) <= 100),
     user_agent USER_AGENT_STR,
     last_seen_at NON_FUTURE_TIMESTAMPTZ NOT NULL DEFAULT current_timestamp,
 
@@ -257,7 +254,7 @@ CREATE INDEX idx_login_attempts_app_time ON login_attempts (app_id, attempted_at
 CREATE INDEX idx_login_attempts_user_time ON login_attempts (user_id, attempted_at DESC);
 CREATE INDEX idx_tokens_type_expires ON tokens (token_type, expires_at);
 CREATE INDEX idx_tokens_user_type ON tokens (user_id, token_type);
-CREATE INDEX idx_tokens_pending_user ON tokens (pending_user_id, token_type);
+CREATE INDEX idx_pending_users_token ON pending_users (token_id, app_id);
 CREATE INDEX idx_api_keys_hash ON api_keys (key_hash);
 CREATE INDEX idx_api_keys_app_active ON api_keys (app_id, is_active);
 
