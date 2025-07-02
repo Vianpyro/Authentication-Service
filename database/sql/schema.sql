@@ -115,13 +115,12 @@ CREATE TABLE sessions (
     expires_at NON_FUTURE_TIMESTAMP NOT NULL DEFAULT current_timestamp + INTERVAL '15 minutes',
     last_activity_at NON_FUTURE_TIMESTAMP NOT NULL DEFAULT current_timestamp,
 
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-
-    CONSTRAINT unique_active_token UNIQUE (token) WHERE is_active = TRUE
+    is_active BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
 CREATE POLICY policy_tenant_isolation ON sessions USING (app_id = current_setting('app.id')::UUID);
+CREATE UNIQUE INDEX unique_active_token_idx ON sessions (token, is_active) WHERE is_active = TRUE;
 
 -- Password Reset Tokens
 CREATE TABLE password_reset_tokens (
