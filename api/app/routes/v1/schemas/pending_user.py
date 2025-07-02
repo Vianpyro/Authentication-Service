@@ -56,14 +56,3 @@ class PendingUserCreate(BaseModel):
             examples=["user@example.com"],
         ),
     ]
-
-
-class PendingUserCreateResponse(BaseModel):
-    """Response schema for pending user creation."""
-
-    success: bool = Field(
-        default=True,
-        title="Success",
-        description="Indicates whether the pending user was successfully created.",
-        examples=[True, False],
-    )

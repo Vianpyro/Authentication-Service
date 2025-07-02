@@ -103,7 +103,7 @@ class AppGetResponse(BaseModel):
     description: AppFieldTypes.Description
     is_active: AppFieldTypes.IsActive
     created_at: AppFieldTypes.CreatedAt
-    updated_at: CommonFieldTypes.Timestamp
+    updated_at: CommonFieldTypes.Timestamp | None = None
 
 
 class AppUpdate(BaseModel):
