@@ -224,7 +224,7 @@ psql -U vscode -d authentication-service -c "\d+ users"
 
 ## 📊 Performance Optimizations
 
-### Indexes
+### Indices
 Strategic indexing for common queries:
 - **User Lookup:** `idx_users_email_app` on `(email_hash, app_id)`
 - **Session Management:** `idx_sessions_user_expires` on `(user_id, expires_at)`

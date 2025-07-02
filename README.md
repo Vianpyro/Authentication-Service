@@ -6,7 +6,7 @@ A production-ready, multi-tenant authentication service built with FastAPI, Post
 
 This project follows a microservices architecture with clear separation of concerns:
 
-```
+```sh
 Authentication-Service/
 ├── api/                     # FastAPI REST API
 │   ├── app/                 # Application logic
@@ -22,7 +22,7 @@ Authentication-Service/
 │   ├── devcontainer.json    # Dev container configuration
 │   ├── docker-compose.yml   # Multi-service setup
 │   └── Dockerfile           # Development image
-└── .vscode/                 # VS Code configuration
+└── .vscode/                 # Visual Studio Code configuration
     ├── launch.json          # Debug configurations
     ├── tasks.json           # Build & run tasks
     └── settings.json        # Editor settings
@@ -33,7 +33,7 @@ Authentication-Service/
 ### Prerequisites
 
 - **Docker** with Docker Compose
-- **VS Code** with Dev Containers extension (recommended)
+- **Visual Studio Code** with Dev Containers extension (recommended)
 - **Git** for version control
 
 ### Development Setup
@@ -72,7 +72,7 @@ Authentication-Service/
 > [!IMPORTANT]
 > Change `DB_PASSWORD` to a secure password before running in production.
 
-3. **Open in VS Code Dev Container:**
+3. **Open in Visual Studio Code Dev Container:**
    ```bash
    code .
    # When prompted, click "Reopen in Container"
@@ -81,7 +81,7 @@ Authentication-Service/
 4. **Start the services:**
    ```bash
    # The dev container automatically starts PostgreSQL
-   # Start the API server using VS Code task or:
+   # Start the API server using Visual Studio Code task or:
    cd api
    uvicorn app.main:app --reload
    ```
@@ -160,9 +160,9 @@ cd database
 docker build -t auth-database .
 ```
 
-### VS Code Integration
+### Visual Studio Code Integration
 
-The project includes comprehensive VS Code configuration:
+The project includes comprehensive Visual Studio Code configuration:
 
 #### Tasks Available
 - **"Run all tests"** - Execute the full test suite
@@ -474,7 +474,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
    ```
 
 #### Performance Issues
-- Check database indexes with `EXPLAIN ANALYZE`
+- Check database Indices with `EXPLAIN ANALYZE`
 - Monitor connection pool usage
 - Review slow query logs
 

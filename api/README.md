@@ -6,7 +6,7 @@ This is the FastAPI-based REST API component of the Authentication Service. It p
 
 The API follows a clean, modular architecture:
 
-```
+```sh
 api/
 ├── app/
 │   ├── main.py              # FastAPI application entry point
@@ -51,11 +51,11 @@ api/
    # From the api directory
    uvicorn app.main:app --reload
 
-   # Or use the VS Code task: "Start FastAPI server"
+   # Or use the Visual Studio Code task: "Start FastAPI server"
    ```
 
 2. **Using the debugger:**
-   - Use the VS Code launch configuration "Python: FastAPI" for debugging
+   - Use the Visual Studio Code launch configuration "Python: FastAPI" for debugging
    - This will also rebuild the database before starting
 
 3. **Production:**
@@ -111,9 +111,9 @@ The project follows strict formatting and linting standards:
 - **isort** for import organization
 - **Pytest** for testing
 
-### VS Code Integration
+### Visual Studio Code Integration
 
-The project includes comprehensive VS Code configuration:
+The project includes comprehensive Visual Studio Code configuration:
 
 1. **Tasks available:**
    - "Run all tests" - Execute the full test suite
