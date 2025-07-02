@@ -7,6 +7,7 @@ This module provides FastAPI endpoints for handling user registration in the aut
 import asyncio
 import time
 from datetime import datetime
+from random import uniform as jitter
 
 from app.routes.v1.schemas.email import RegistrationEmailSchema
 from app.routes.v1.schemas.pending_user import PendingUserCreate
@@ -19,7 +20,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
-MIN_RESPONSE_TIME_SECONDS = 0.5
+MIN_RESPONSE_TIME_SECONDS = 0.45
 
 
 @router.post(
@@ -37,7 +38,7 @@ async def register_pending_user(
 
     Sets a minimum response time of ~0.5s to mitigate timing attacks.
     """
-    start = time.monotonic()
+    start = time.monotonic() + jitter(0, 0.1)
 
     email_encrypted = encrypt_email(pending_user.email)
     email_hash = hash_email(pending_user.email)
