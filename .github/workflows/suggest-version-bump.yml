@@ -90,10 +90,11 @@ jobs:
 
             NEXT_VERSION="${prefix}${MAJOR}.${MINOR}.${PATCH}${PRERELEASE}"
 
-            # Set outputs for this component
-            echo "${component}_bump=$BUMP" >> "$GITHUB_OUTPUT"
-            echo "${component}_latest_tag=$TAG" >> "$GITHUB_OUTPUT"
-            echo "${component}_next_version=$NEXT_VERSION" >> "$GITHUB_OUTPUT"
+            {
+              echo "${component}_bump=$BUMP"
+              echo "${component}_latest_tag=$TAG"
+              echo "${component}_next_version=$NEXT_VERSION"
+            } >> "$GITHUB_OUTPUT"
           }
 
           # Process both components
