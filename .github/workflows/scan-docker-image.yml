@@ -1,3 +1,4 @@
+---
 name: Scan Docker Images
 
 permissions:
@@ -15,9 +16,8 @@ on:
 
 jobs:
   scan-images:
-    name: Scan ${{ matrix.image_name }} Image
-    uses: Vianpyro/Template/.github/workflows/docker-image-verification.yml@main
-
+    name: Scan ${{ matrix.image_name }}
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         include:
@@ -25,7 +25,17 @@ jobs:
             dockerfile_path: ./Dockerfile
             context: .devcontainer
 
-    with:
-      image_name: ${{ matrix.image_name }}
-      dockerfile_path: ${{ matrix.dockerfile_path }}
-      context: ${{ matrix.context }}
+          - image_name: API
+            dockerfile_path: ./api/Dockerfile
+            context: ./api
+
+          - image_name: Database
+            dockerfile_path: ./database/Dockerfile
+            context: ./database
+    steps:
+      - name: Scan ${{ matrix.image_name }}
+        uses: Vianpyro/Template/.github/workflows/docker-image-verification.yml@main
+        with:
+          image_name: ${{ matrix.image_name }}
+          dockerfile_path: ${{ matrix.dockerfile_path }}
+          context: ${{ matrix.context }}

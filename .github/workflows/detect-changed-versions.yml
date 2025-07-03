@@ -1,0 +1,39 @@
+---
+# This reusable workflow detects which API version folders (api/app/routes/v*/) have changes
+# in their Python (.py) files compared to the main branch.
+# It outputs a space-separated list of changed version folders as 'versions', for use in downstream workflows.
+
+name: Detect Changed Versions
+
+permissions:
+  contents: read
+  statuses: read
+
+on:
+  workflow_call:
+    outputs:
+      versions:
+        description: 'Changed version folders'
+        value: ${{ jobs.detect-changed-versions.outputs.versions }}
+
+jobs:
+  detect-changed-versions:
+    name: Detect Changed Versions
+    runs-on: ubuntu-latest
+    outputs:
+      versions: ${{ steps.list-folders.outputs.versions }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: List changed API version folders
+        id: list-folders
+        run: |
+          git fetch origin main
+          BASE_SHA=$(git merge-base HEAD origin/main)
+          CHANGED=$(git diff --name-only "$BASE_SHA"...HEAD -- 'api/app/routes/v*/**/*.py' | grep -v 'test' || true)
+          VERSIONS=$(echo "$CHANGED" | sed -n 's|^api/app/routes/\(v[0-9]\+\)/.*|\1|p' | sort -u | tr '\n' ' ')
+          echo "versions=$VERSIONS" >> "$GITHUB_OUTPUT"
