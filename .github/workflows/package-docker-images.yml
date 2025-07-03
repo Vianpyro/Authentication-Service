@@ -146,7 +146,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Generate SBOM
-        if: matrix.changed == 'true'
+        if: matrix.should_build == 'true'
         uses: anchore/sbom-action@v0
         with:
           image: ghcr.io/${{ needs.check-changes.outputs.repo-lower }}-${{ matrix.component }}:${{ needs.check-changes.outputs.version }}
