@@ -19,20 +19,17 @@ jobs:
     uses: ./.github/workflows/suggest-version-bump.yml
 
   create-release:
-    runs-on: ubuntu-latest
+    name: Create Release
     needs: suggest-bump
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+    runs-on: ubuntu-latest
 
-      - name: Create release draft
+    steps:
+      - name: Create GitHub Release
         uses: actions/create-release@v1
-        with:
-          tag_name: ${{ needs.suggest-bump.outputs.next_version }}
-          release_name: ${{ needs.suggest-bump.outputs.next_version }}
-          draft: false
-          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ needs.suggest-bump.outputs.api_next_version }}
+          release_name: ${{ needs.suggest-bump.outputs.api_next_version }}
+          draft: false
+          prerelease: false

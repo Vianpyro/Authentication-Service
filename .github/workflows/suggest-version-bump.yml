@@ -21,7 +21,7 @@ on:
         value: ${{ jobs.analyze.outputs.api_next_version }}
       api_bump_type:
         description: 'API version bump type'
-        value: ${{ jobs.analyze.outputs.api_bump }}
+        value: ${{ jobs.analyze.outputs.api_bump_type }}
       api_latest_tag:
         description: 'Latest API tag'
         value: ${{ jobs.analyze.outputs.api_latest_tag }}
@@ -30,7 +30,7 @@ on:
         value: ${{ jobs.analyze.outputs.database_next_version }}
       database_bump_type:
         description: 'Database version bump type'
-        value: ${{ jobs.analyze.outputs.database_bump }}
+        value: ${{ jobs.analyze.outputs.database_bump_type }}
       database_latest_tag:
         description: 'Latest database tag'
         value: ${{ jobs.analyze.outputs.database_latest_tag }}
@@ -43,34 +43,24 @@ jobs:
     uses: ./.github/workflows/get-pr-labels.yml
 
   analyze:
-    name: Analyze ${{ matrix.component }} Changes
-    needs:
-      - suggest
-      - labels
+    name: Analyze Changes
+    needs: [suggest, labels]
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - component: api
-            tag_prefix: 'api-v'
-          - component: database
-            tag_prefix: 'database-v'
     outputs:
-      api_bump: ${{ steps.api.outputs.bump }}
+      api_bump_type: ${{ steps.api.outputs.bump }}
       api_latest_tag: ${{ steps.api.outputs.latest_tag }}
       api_next_version: ${{ steps.api.outputs.next_version }}
-      database_bump: ${{ steps.database.outputs.bump }}
+      database_bump_type: ${{ steps.database.outputs.bump }}
       database_latest_tag: ${{ steps.database.outputs.latest_tag }}
       database_next_version: ${{ steps.database.outputs.next_version }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Process version bump
-        id: process
+      - name: Process API version
+        id: api
         run: |
           LABELS="${{ needs.labels.outputs.labels }}"
           BUMP="patch"
@@ -78,11 +68,11 @@ jobs:
           echo "$LABELS" | grep -q 'type: security' && BUMP="minor"
           echo "$LABELS" | grep -q 'special: breaking change' && BUMP="major"
 
-          TAG=$(git tag --list '${{ matrix.tag_prefix }}*' --sort=-v:refname | head -n1)
-          [ -z "$TAG" ] && TAG="${{ matrix.tag_prefix }}0.0.0"
+          TAG=$(git tag --list 'api-v*' --sort=-v:refname | head -n1)
+          [ -z "$TAG" ] && TAG="api-v0.0.0"
 
-          VERSION=$(echo "$TAG" | sed -E "s/^${{ matrix.tag_prefix }}([0-9]+\.[0-9]+\.[0-9]+).*/\1/")
-          PRERELEASE=$(echo "$TAG" | sed -nE "s/^${{ matrix.tag_prefix }}[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$/\1/p")
+          VERSION=$(echo "$TAG" | sed -E "s/^api-v([0-9]+\.[0-9]+\.[0-9]+).*/\1/")
+          PRERELEASE=$(echo "$TAG" | sed -nE "s/^api-v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$/\1/p")
           IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
 
           case "$BUMP" in
@@ -91,7 +81,7 @@ jobs:
             patch) PATCH=$((PATCH + 1)) ;;
           esac
 
-          NEXT_VERSION="${{ matrix.tag_prefix }}${MAJOR}.${MINOR}.${PATCH}${PRERELEASE}"
+          NEXT_VERSION="api-v${MAJOR}.${MINOR}.${PATCH}${PRERELEASE}"
 
           {
             echo "bump=$BUMP"
@@ -99,13 +89,34 @@ jobs:
             echo "next_version=$NEXT_VERSION"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Set component outputs
-        id: ${{ matrix.component }}
+      - name: Process Database version
+        id: database
         run: |
+          LABELS="${{ needs.labels.outputs.labels }}"
+          BUMP="patch"
+          echo "$LABELS" | grep -q 'type: feature' && BUMP="minor"
+          echo "$LABELS" | grep -q 'type: security' && BUMP="minor"
+          echo "$LABELS" | grep -q 'special: breaking change' && BUMP="major"
+
+          TAG=$(git tag --list 'database-v*' --sort=-v:refname | head -n1)
+          [ -z "$TAG" ] && TAG="database-v0.0.0"
+
+          VERSION=$(echo "$TAG" | sed -E "s/^database-v([0-9]+\.[0-9]+\.[0-9]+).*/\1/")
+          PRERELEASE=$(echo "$TAG" | sed -nE "s/^database-v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$/\1/p")
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+
+          case "$BUMP" in
+            major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+            minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+            patch) PATCH=$((PATCH + 1)) ;;
+          esac
+
+          NEXT_VERSION="database-v${MAJOR}.${MINOR}.${PATCH}${PRERELEASE}"
+
           {
-            echo "bump=${{ steps.process.outputs.bump }}"
-            echo "latest_tag=${{ steps.process.outputs.latest_tag }}"
-            echo "next_version=${{ steps.process.outputs.next_version }}"
+            echo "bump=$BUMP"
+            echo "latest_tag=$TAG"
+            echo "next_version=$NEXT_VERSION"
           } >> "$GITHUB_OUTPUT"
 
   report:
@@ -119,6 +130,6 @@ jobs:
             echo "## 🚀 Suggested Version Bumps"
             echo "| Component | Bump Type | Latest Tag | Next Version |"
             echo "|-----------|-----------|------------|--------------|"
-            echo "| API | ${{ needs.analyze.outputs.api_bump }} | \`${{ needs.analyze.outputs.api_latest_tag }}\` | \`${{ needs.analyze.outputs.api_next_version }}\` |"
-            echo "| Database | ${{ needs.analyze.outputs.database_bump }} | \`${{ needs.analyze.outputs.database_latest_tag }}\` | \`${{ needs.analyze.outputs.database_next_version }}\` |"
+            echo "| API | ${{ needs.analyze.outputs.api_bump_type }} | \`${{ needs.analyze.outputs.api_latest_tag }}\` | \`${{ needs.analyze.outputs.api_next_version }}\` |"
+            echo "| Database | ${{ needs.analyze.outputs.database_bump_type }} | \`${{ needs.analyze.outputs.database_latest_tag }}\` | \`${{ needs.analyze.outputs.database_next_version }}\` |"
           } >> "$GITHUB_STEP_SUMMARY"
