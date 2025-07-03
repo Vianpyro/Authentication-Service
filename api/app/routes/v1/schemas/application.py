@@ -113,7 +113,7 @@ class AppUpdate(BaseModel):
     new_name: AppFieldTypes.AppName | None = None
     new_slug: AppFieldTypes.Slug | None = None
     new_description: AppFieldTypes.Description | None = None
-    new_status: AppFieldTypes.IsActive = True
+    is_active: AppFieldTypes.IsActive = True
 
 
 class AppUpdateResponse(BaseModel):

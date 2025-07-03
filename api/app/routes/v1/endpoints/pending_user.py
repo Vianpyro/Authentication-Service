@@ -1,7 +1,26 @@
 """
-User Registration endpoints for the API.
+Pending User Registration API Endpoints.
 
-This module provides FastAPI endpoints for handling user registration in the authentication database.
+This module provides FastAPI endpoints for handling the two-step user registration process
+in the authentication service. The registration flow consists of:
+
+1. Initial registration (`POST /`) - Creates a pending user record and sends verification email
+2. Confirmation (`POST /confirm`) - Validates the verification token and creates the user account
+
+Features:
+- Automatic cleanup of expired registrations
+- Background email sending
+- Comprehensive error handling with appropriate HTTP status codes
+
+Security Features:
+- Timing attack mitigation with minimum response times
+- Secure email encryption and hashing
+- Token-based email verification
+- Email addresses are encrypted at rest and hashed for indexing
+- Passwords are hashed using Argon2ID
+- Verification tokens are cryptographically secure
+- Rate limiting through minimum response times
+- IP address and user agent tracking for audit purposes
 """
 
 import asyncio
@@ -35,7 +54,7 @@ MIN_RESPONSE_TIME_SECONDS = 0.45
 @router.post(
     "/",
     status_code=status.HTTP_204_NO_CONTENT,
-    response_description="Pending user registration successful",
+    response_description="Verification email sent successfully",
 )
 async def register_pending_user(
     background_tasks: BackgroundTasks,
@@ -44,9 +63,34 @@ async def register_pending_user(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Register a new user in the authentication database.
+    Initiate user registration by creating a pending user record and sending verification email.
 
-    Sets a minimum response time of ~0.5s to mitigate timing attacks.
+    This endpoint starts the two-step registration process by:
+    1. Creating a pending user record with encrypted email and verification token
+    2. Sending a verification email with a time-limited confirmation link
+    3. Implementing timing attack mitigation with minimum response time
+
+    The endpoint returns HTTP 204 No Content regardless of whether the email exists to prevent email enumeration attacks
+    If the email is already registered, no verification email is sent.
+
+    Args:
+        background_tasks: FastAPI background tasks for async email sending
+        pending_user: Registration data including email, app_id, and confirmation_url
+        request: HTTP request object for extracting client metadata
+        db: Database session dependency
+
+    Returns:
+        HTTP 204 No Content: Always returned to prevent email enumeration
+
+    Security Features:
+        - Minimum response time of ~0.5s to mitigate timing attacks
+        - Email encryption at rest using application-level encryption
+        - Email hashing for secure indexing without exposing plaintext
+        - Cryptographically secure verification tokens
+        - Client IP and user agent tracking for audit logs
+
+    Raises:
+        HTTPException: Only for unexpected database errors (integrity errors are silenced)
     """
     start = time.monotonic() + jitter(0, 0.1)
 
@@ -134,6 +178,7 @@ async def register_pending_user(
     "/confirm",
     status_code=status.HTTP_201_CREATED,
     response_model=PendingUserConfirmationResponse,
+    response_description="User account created successfully",
 )
 async def confirm_pending_user(
     pending_user: PendingUserConfirmation,
@@ -141,11 +186,39 @@ async def confirm_pending_user(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Confirm a pending user registration and create the user account.
+    Complete user registration by validating verification token and creating user account.
 
-    This endpoint is used to confirm a pending user registration by providing the
-    application ID, verification token, and optionally the user's IP address and user agent.
-    It will create the user account in the database if the token is valid.
+    This endpoint completes the two-step registration process by:
+    1. Validating the verification token and checking expiration
+    2. Creating the user account with the provided password
+    3. Cleaning up the pending user record and token
+    4. Returning the new user ID
+
+    The endpoint performs comprehensive validation including token validity,
+    expiration checks, and duplicate user detection.
+    All validation errors are mapped to appropriate HTTP status codes.
+
+    Args:
+        pending_user: Confirmation data including app_id, token, and password
+        request: HTTP request object for extracting client metadata
+        db: Database session dependency
+
+    Returns:
+        PendingUserConfirmationResponse: Contains the newly created user ID
+
+    Raises:
+        HTTPException:
+            - 404 Not Found: Invalid or expired verification token
+            - 409 Conflict: User account already exists
+            - 410 Gone: Token or registration has expired
+            - 500 Internal Server Error: Unexpected database errors
+
+    Security Features:
+        - Verification token validation with cryptographic security
+        - Password hashing using Argon2ID algorithm
+        - Automatic cleanup of expired tokens and registrations
+        - Client IP and user agent logging for audit trails
+        - Atomic database operations to prevent race conditions
     """
 
     # Extract IP address and user agent from request

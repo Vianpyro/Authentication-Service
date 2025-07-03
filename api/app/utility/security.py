@@ -170,15 +170,23 @@ def verify_password(password: str, hashed_password: str) -> bool:
 
 def hash_email(email: str) -> str:
     """
-    Generate a SHA-256 hash of the email (used for fast lookup).
+    Generate a SHA-256 hash of the normalized email (used for fast lookup).
+    Normalizes by removing subdomain aliases (part after + and before @) to prevent duplicates.
 
     Args:
         email (str): The email address.
 
     Returns:
-        str: The SHA-256 hash of the email.
+        str: The SHA-256 hash of the normalized email.
     """
-    return hash_field(email)
+    normalized_email = email.lower()
+
+    if "+" in normalized_email:
+        local_part, domain_part = normalized_email.rsplit("@", 1)
+        local_part = local_part.split("+")[0]
+        normalized_email = f"{local_part}@{domain_part}"
+
+    return hash_field(normalized_email)
 
 
 def hash_phone(phone: str) -> str:

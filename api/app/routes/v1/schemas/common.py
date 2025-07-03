@@ -94,7 +94,7 @@ class CommonFieldTypes:
         Field(
             title="ID",
             description="Unique identifier",
-            examples=["123e4567-e89b-12d3-a456-426614174000"],
+            examples=[uuid.uuid4()],
             default_factory=uuid.uuid4,
         ),
     ]
