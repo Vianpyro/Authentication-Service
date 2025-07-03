@@ -49,77 +49,56 @@ jobs:
       - labels
     runs-on: ubuntu-latest
     outputs:
-      api_bump_type: ${{ steps.api.outputs.bump }}
-      api_latest_tag: ${{ steps.api.outputs.latest_tag }}
-      api_next_version: ${{ steps.api.outputs.next_version }}
-      database_bump_type: ${{ steps.database.outputs.bump }}
-      database_latest_tag: ${{ steps.database.outputs.latest_tag }}
-      database_next_version: ${{ steps.database.outputs.next_version }}
+      api_bump_type: ${{ steps.process.outputs.api_bump }}
+      api_latest_tag: ${{ steps.process.outputs.api_latest_tag }}
+      api_next_version: ${{ steps.process.outputs.api_next_version }}
+      database_bump_type: ${{ steps.process.outputs.database_bump }}
+      database_latest_tag: ${{ steps.process.outputs.database_latest_tag }}
+      database_next_version: ${{ steps.process.outputs.database_next_version }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Process API version
-        id: api
+      - name: Process all component versions
+        id: process
         run: |
-          LABELS="${{ needs.labels.outputs.labels }}"
-          BUMP="patch"
-          echo "$LABELS" | grep -q 'type: feature' && BUMP="minor"
-          echo "$LABELS" | grep -q 'type: security' && BUMP="minor"
-          echo "$LABELS" | grep -q 'special: breaking change' && BUMP="major"
+          # Function to process version bump for a component
+          process_version() {
+            local component="$1"
+            local prefix="$2"
 
-          TAG=$(git tag --list 'api-v*' --sort=-v:refname | head -n1)
-          [ -z "$TAG" ] && TAG="api-v0.0.0"
+            LABELS="${{ needs.labels.outputs.labels }}"
+            BUMP="patch"
+            echo "$LABELS" | grep -q 'type: feature' && BUMP="minor"
+            echo "$LABELS" | grep -q 'type: security' && BUMP="minor"
+            echo "$LABELS" | grep -q 'special: breaking change' && BUMP="major"
 
-          VERSION=$(echo "$TAG" | sed -E "s/^api-v([0-9]+\.[0-9]+\.[0-9]+).*/\1/")
-          PRERELEASE=$(echo "$TAG" | sed -nE "s/^api-v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$/\1/p")
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+            TAG=$(git tag --list "${prefix}*" --sort=-v:refname | head -n1)
+            [ -z "$TAG" ] && TAG="${prefix}0.0.0"
 
-          case "$BUMP" in
-            major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
-            minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
-            patch) PATCH=$((PATCH + 1)) ;;
-          esac
+            VERSION=$(echo "$TAG" | sed -E "s/^${prefix}([0-9]+\.[0-9]+\.[0-9]+).*/\1/")
+            PRERELEASE=$(echo "$TAG" | sed -nE "s/^${prefix}[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$/\1/p")
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
 
-          NEXT_VERSION="api-v${MAJOR}.${MINOR}.${PATCH}${PRERELEASE}"
+            case "$BUMP" in
+              major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+              minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+              patch) PATCH=$((PATCH + 1)) ;;
+            esac
 
-          {
-            echo "bump=$BUMP"
-            echo "latest_tag=$TAG"
-            echo "next_version=$NEXT_VERSION"
-          } >> "$GITHUB_OUTPUT"
+            NEXT_VERSION="${prefix}${MAJOR}.${MINOR}.${PATCH}${PRERELEASE}"
 
-      - name: Process Database version
-        id: database
-        run: |
-          LABELS="${{ needs.labels.outputs.labels }}"
-          BUMP="patch"
-          echo "$LABELS" | grep -q 'type: feature' && BUMP="minor"
-          echo "$LABELS" | grep -q 'type: security' && BUMP="minor"
-          echo "$LABELS" | grep -q 'special: breaking change' && BUMP="major"
+            # Set outputs for this component
+            echo "${component}_bump=$BUMP" >> "$GITHUB_OUTPUT"
+            echo "${component}_latest_tag=$TAG" >> "$GITHUB_OUTPUT"
+            echo "${component}_next_version=$NEXT_VERSION" >> "$GITHUB_OUTPUT"
+          }
 
-          TAG=$(git tag --list 'database-v*' --sort=-v:refname | head -n1)
-          [ -z "$TAG" ] && TAG="database-v0.0.0"
-
-          VERSION=$(echo "$TAG" | sed -E "s/^database-v([0-9]+\.[0-9]+\.[0-9]+).*/\1/")
-          PRERELEASE=$(echo "$TAG" | sed -nE "s/^database-v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$/\1/p")
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
-
-          case "$BUMP" in
-            major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
-            minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
-            patch) PATCH=$((PATCH + 1)) ;;
-          esac
-
-          NEXT_VERSION="database-v${MAJOR}.${MINOR}.${PATCH}${PRERELEASE}"
-
-          {
-            echo "bump=$BUMP"
-            echo "latest_tag=$TAG"
-            echo "next_version=$NEXT_VERSION"
-          } >> "$GITHUB_OUTPUT"
+          # Process both components
+          process_version "api" "api-v"
+          process_version "database" "database-v"
 
   report:
     name: Report Summary
