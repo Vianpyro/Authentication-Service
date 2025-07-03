@@ -8,8 +8,12 @@ across different schema modules to ensure consistency and reduce duplication.
 import ipaddress
 import uuid
 from datetime import datetime
+from random import choice, randint
+from string import ascii_letters
+from sys import maxsize as MAX_SIZE
 from typing import Annotated
 
+from app.utility.security import create_verification_token, encrypt_field, hash_field
 from pydantic import Field
 
 
@@ -22,7 +26,7 @@ class CommonFieldTypes:
             title="Encrypted Field",
             min_length=1,
             description="Encrypted value of the field",
-            examples=["U2FsdGVkX1+..."],
+            example=encrypt_field("".join(choice(ascii_letters) for _ in range(10))),
         ),
     ]
 
@@ -34,7 +38,7 @@ class CommonFieldTypes:
             min_length=64,
             max_length=64,
             description="Hash of the field",
-            examples=["5d41402abc4b2a76b9719d911017c592"],
+            example=hash_field("".join(choice(ascii_letters) for _ in range(10))),
         ),
     ]
 
@@ -43,7 +47,7 @@ class CommonFieldTypes:
         Field(
             title="ID",
             description="Unique identifier",
-            examples=[1, 2, 3],
+            example=randint(1, MAX_SIZE),
             default=1,
         ),
     ]
@@ -53,7 +57,7 @@ class CommonFieldTypes:
         Field(
             title="IP Address",
             description="IP address of the user",
-            examples=["192.168.1.1"],
+            example="192.168.1.1",
         ),
     ]
 
@@ -62,7 +66,7 @@ class CommonFieldTypes:
         Field(
             title="Timestamp",
             description="Timestamp of the event",
-            examples=[datetime(2023, 1, 1, 0, 0, 0)],
+            example=datetime(2023, 1, 1, 0, 0, 0),
         ),
     ]
 
@@ -74,7 +78,7 @@ class CommonFieldTypes:
             min_length=32,
             max_length=128,
             description="Unique token for the pending user",
-            examples=["abc123"],
+            example=create_verification_token(),
         ),
     ]
 
@@ -83,9 +87,7 @@ class CommonFieldTypes:
         Field(
             title="User Agent",
             description="User agent string of the client",
-            examples=[
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110"
-            ],
+            example="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110",
         ),
     ]
 
@@ -94,7 +96,7 @@ class CommonFieldTypes:
         Field(
             title="ID",
             description="Unique identifier",
-            examples=[uuid.uuid4()],
+            example=uuid.uuid4(),
             default_factory=uuid.uuid4,
         ),
     ]

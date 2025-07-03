@@ -7,11 +7,11 @@ such as user requests and responses.
 
 from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from .application import AppFieldTypes
 from .common import CommonFieldTypes
-from .user import UserFieldTypes
+from .user import UserFieldTypes, validate_password_complexity
 
 
 class PendingUserTypes:
@@ -50,7 +50,7 @@ class PendingUserCreate(BaseModel):
         Field(
             title="Email",
             description="The email address of the pending user.",
-            examples=["user@example.com"],
+            example="user@example.com",
         ),
     ]
 
@@ -63,6 +63,11 @@ class PendingUserConfirmation(BaseModel):
     token: PendingUserTypes.Token
 
     password: UserFieldTypes.Password
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, password: str) -> str:
+        return validate_password_complexity(password)
 
 
 class PendingUserConfirmationResponse(BaseModel):
