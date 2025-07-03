@@ -44,7 +44,9 @@ jobs:
 
   analyze:
     name: Analyze Changes
-    needs: [suggest, labels]
+    needs:
+      - suggest
+      - labels
     runs-on: ubuntu-latest
     outputs:
       api_bump_type: ${{ steps.api.outputs.bump }}
