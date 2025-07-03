@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 
 from .application import AppFieldTypes
 from .common import CommonFieldTypes
+from .user import UserFieldTypes
 
 
 class PendingUserTypes:
@@ -27,10 +28,6 @@ class PendingUserTypes:
     EmailHash = CommonFieldTypes.HashedField
 
     Id = CommonFieldTypes.Id
-
-    IpAddress = CommonFieldTypes.IpAddress
-
-    UserAgent = CommonFieldTypes.UserAgent
 
     Token = CommonFieldTypes.Token
 
@@ -56,3 +53,19 @@ class PendingUserCreate(BaseModel):
             examples=["user@example.com"],
         ),
     ]
+
+
+class PendingUserConfirmation(BaseModel):
+    """Schema for confirming a pending user registration."""
+
+    app_id: PendingUserTypes.AppId
+
+    token: PendingUserTypes.Token
+
+    password: UserFieldTypes.Password
+
+
+class PendingUserConfirmationResponse(BaseModel):
+    """Response schema for confirming a pending user registration."""
+
+    user_id: UserFieldTypes.Id

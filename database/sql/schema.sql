@@ -58,7 +58,7 @@ CREATE TABLE users (
     account_locked_at NON_FUTURE_TIMESTAMPTZ,
 
     CONSTRAINT unique_user_per_app UNIQUE (email_hash, app_id),
-    CONSTRAINT chk_email_hash_present CHECK ((email_encrypted IS NULL AND email_hash IS NULL) OR (email_encrypted IS NOT NULL AND email_hash IS NOT NULL)),
+    CONSTRAINT chk_email_hash_present CHECK (email_encrypted IS NOT NULL AND email_hash IS NOT NULL),
     CONSTRAINT chk_phone_hash_present CHECK ((phone_encrypted IS NULL AND phone_hash IS NULL) OR (phone_encrypted IS NOT NULL AND phone_hash IS NOT NULL))
 );
 

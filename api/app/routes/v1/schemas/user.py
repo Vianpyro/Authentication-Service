@@ -5,9 +5,10 @@ This module provides Pydantic schemas for validating user-related data,
 such as user requests and responses.
 """
 
+import re
 from typing import Annotated
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from .application import AppFieldTypes
 from .common import CommonFieldTypes
@@ -66,6 +67,16 @@ class UserFieldTypes:
 
     LastLoginAt = CommonFieldTypes.Timestamp
 
+    Password = Annotated[
+        str,
+        Field(
+            title="Password",
+            description="User's password, must be at least 12 characters long and contain a mix of letters, numbers, and symbols",
+            min_length=12,
+            examples=["StrongPassword123!"],
+        ),
+    ]
+
     PasswordHash = Annotated[
         str,
         Field(
@@ -82,4 +93,25 @@ class UserFieldTypes:
 
     ScheduledForDeletionAt = CommonFieldTypes.Timestamp
 
-    UpdatedAt = CommonFieldTypes.UpdatedAt
+    UpdatedAt = CommonFieldTypes.Timestamp
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_complexity(cls, v: str) -> str:
+        """Validate password complexity requirements."""
+        if len(v) < 12:
+            raise ValueError("Password must be at least 12 characters long")
+
+        if not re.search(r"[A-Z]", v):
+            raise ValueError("Password must contain at least one uppercase letter")
+
+        if not re.search(r"[a-z]", v):
+            raise ValueError("Password must contain at least one lowercase letter")
+
+        if not re.search(r"\d", v):
+            raise ValueError("Password must contain at least one digit")
+
+        if not re.search(r"[^A-Za-z0-9]", v):
+            raise ValueError("Password must contain at least one special character")
+
+        return v

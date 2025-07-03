@@ -11,6 +11,7 @@ import base64
 import hashlib
 import os
 import secrets
+import unicodedata
 
 import pyotp
 from argon2 import PasswordHasher
@@ -19,7 +20,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 ph = PasswordHasher()
 
 AES_KEY = bytes.fromhex(os.getenv("AES_SECRET_KEY", os.urandom(32).hex()))
-PEPPER = os.getenv("PEPPER", "SuperSecretPepper").encode("utf-8")
+PEPPER = os.getenv("PEPPER", "SuperSecretPepper")
 
 
 def create_token(length: int) -> str:
@@ -117,8 +118,9 @@ def hash_password(password: str) -> str:
     Returns:
         str: The Argon2 hash of the peppered password.
     """
-    peppered_password = password.encode("utf-8") + PEPPER
-    return ph.hash(peppered_password)
+    normalized = unicodedata.normalize("NFKC", password)
+    peppered = normalized + PEPPER
+    return ph.hash(peppered)
 
 
 def verify_otp(
@@ -159,9 +161,9 @@ def verify_password(password: str, hashed_password: str) -> bool:
     Returns:
         bool: True if the password matches, False otherwise.
     """
-    peppered_password = password.encode("utf-8") + PEPPER
+    peppered = unicodedata.normalize("NFKC", password) + PEPPER
     try:
-        return ph.verify(hashed_password, peppered_password)
+        return ph.verify(hashed_password, peppered)
     except Exception:
         return False
 
