@@ -18,9 +18,9 @@ from pydantic import AfterValidator, Field
 
 
 def validate_future_timestamp(value: datetime) -> datetime:
-    """Validate that the timestamp is now or in the future."""
-    if value < datetime.now():
-        raise ValueError("Timestamp must be now or in the future")
+    """Validate that the timestamp is in the future."""
+    if value <= datetime.now():
+        raise ValueError("Timestamp must be in the future")
     return value
 
 
