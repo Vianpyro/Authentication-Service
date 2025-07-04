@@ -113,6 +113,8 @@ CREATE TABLE pending_users (
     CONSTRAINT unique_pending_user_per_app UNIQUE (email_hash, app_id)
 );
 
+CREATE POLICY policy_tenant_isolation ON pending_users USING (app_id = current_setting('app.id')::UUID);
+
 -- Device Fingerprints Table: Stores device fingerprints for users
 CREATE TABLE device_fingerprints (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

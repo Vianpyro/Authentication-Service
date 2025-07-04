@@ -37,6 +37,16 @@ class AppFieldTypes:
         ),
     ]
 
+    Description = Annotated[
+        str | None,
+        Field(
+            title="Application Description",
+            max_length=500,
+            description="Optional new description for the application",
+            examples=["Updated description of the application"],
+        ),
+    ]
+
     Id = CommonFieldTypes.UUID
 
     IsActive = Annotated[

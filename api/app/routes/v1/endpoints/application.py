@@ -203,7 +203,6 @@ async def update_application(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Application not found",
         )
-
     await db.commit()
     return AppUpdateResponse(
         name=app_details.app_name,

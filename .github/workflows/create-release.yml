@@ -1,0 +1,35 @@
+---
+name: Create Release
+
+permissions:
+  contents: write
+  pull-requests: read
+  statuses: read
+
+on:
+  push:
+    branches:
+      - 'main'
+    paths:
+      - 'database/sql/**/*.sql'
+      - 'api/app/routes/v*/**/*.py'
+
+jobs:
+  suggest-bump:
+    uses: ./.github/workflows/suggest-version-bump.yml
+
+  create-release:
+    name: Create Release
+    needs: suggest-bump
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ needs.suggest-bump.outputs.api_next_version }}
+          release_name: ${{ needs.suggest-bump.outputs.api_next_version }}
+          draft: false
+          prerelease: false
