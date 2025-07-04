@@ -16,17 +16,6 @@ from pydantic import Field
 class CommonFieldTypes:
     """Common field types used across multiple schema modules."""
 
-    AppId = Annotated[
-        uuid.UUID,
-        Field(
-            title="Application ID",
-            pattern=r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-            description="Unique identifier for the application",
-            examples=["123e4567-e89b-12d3-a456-426614174000"],
-            default=uuid.uuid4(),
-        ),
-    ]
-
     EncryptedField = Annotated[
         str,
         Field(
@@ -104,8 +93,8 @@ class CommonFieldTypes:
         uuid.UUID,
         Field(
             title="ID",
-            pattern=r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
             description="Unique identifier",
             examples=["123e4567-e89b-12d3-a456-426614174000"],
+            default_factory=uuid.uuid4,
         ),
     ]

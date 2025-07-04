@@ -1,0 +1,67 @@
+---
+name: Enforce Correct Version Update
+
+permissions:
+  contents: read
+  statuses: write
+  pull-requests: read
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'api/app/**/*.py'
+
+jobs:
+  detect-changes:
+    uses: ./.github/workflows/detect-changed-versions.yml
+  suggest-version-bump:
+    uses: ./.github/workflows/suggest-version-bump.yml
+
+  enforce-version:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set changed versions
+        id: set_versions
+        run: |
+          echo "VERSIONS=${{ needs.detect-changes.outputs.versions }}" >> "$GITHUB_ENV"
+
+      - name: Check version bumps
+        id: check_versions
+        run: |
+          git fetch origin main
+          BASE_SHA=$(git merge-base HEAD origin/main)
+          EXIT_CODE=0
+          REPORT=""
+
+          # Check api/app/version.py
+          VERSION_PY_CHANGED=$(git diff "$BASE_SHA"...HEAD -- "api/app/version.py" | grep '__version__ = ' || true)
+          if [ -z "$VERSION_PY_CHANGED" ]; then
+            REPORT+="🛑 Python code was changed, but __version__ was not updated in api/app/version.py\n"
+            EXIT_CODE=1
+          else
+            REPORT+="✅ api/app/version.py includes a version change.\n"
+          fi
+
+          # Check each changed version folder
+          for v in $VERSIONS; do
+            INIT_CHANGED=$(git diff "$BASE_SHA"...HEAD -- "api/app/routes/$v/__init__.py" | grep '__version__ = ' || true)
+            if [ -z "$INIT_CHANGED" ]; then
+              REPORT+="🛑 Version $v was modified, but __version__ was not updated in api/app/routes/$v/__init__.py\n"
+              EXIT_CODE=1
+            else
+              REPORT+="✅ api/app/routes/$v/__init__.py includes a version change.\n"
+            fi
+          done
+
+          echo -e "$REPORT"
+          echo -e "$REPORT" >> "$GITHUB_STEP_SUMMARY"
+          exit $EXIT_CODE

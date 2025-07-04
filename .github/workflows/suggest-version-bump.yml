@@ -1,0 +1,117 @@
+---
+# This workflow suggests the next version bump for changed API folders and database based on PR labels and the latest tag.
+
+name: Suggest Version Bump
+
+permissions:
+  contents: read
+  statuses: read
+  pull-requests: read
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'database/**/*.sql'
+  workflow_call:
+    outputs:
+      api_next_version:
+        description: 'Suggested next API version'
+        value: ${{ jobs.analyze.outputs.api_next_version }}
+      api_bump_type:
+        description: 'API version bump type'
+        value: ${{ jobs.analyze.outputs.api_bump_type }}
+      api_latest_tag:
+        description: 'Latest API tag'
+        value: ${{ jobs.analyze.outputs.api_latest_tag }}
+      database_next_version:
+        description: 'Suggested next database version'
+        value: ${{ jobs.analyze.outputs.database_next_version }}
+      database_bump_type:
+        description: 'Database version bump type'
+        value: ${{ jobs.analyze.outputs.database_bump_type }}
+      database_latest_tag:
+        description: 'Latest database tag'
+        value: ${{ jobs.analyze.outputs.database_latest_tag }}
+
+jobs:
+  suggest:
+    uses: ./.github/workflows/detect-changed-versions.yml
+
+  labels:
+    uses: ./.github/workflows/get-pr-labels.yml
+
+  analyze:
+    name: Analyze Changes
+    needs:
+      - suggest
+      - labels
+    runs-on: ubuntu-latest
+    outputs:
+      api_bump_type: ${{ steps.process.outputs.api_bump }}
+      api_latest_tag: ${{ steps.process.outputs.api_latest_tag }}
+      api_next_version: ${{ steps.process.outputs.api_next_version }}
+      database_bump_type: ${{ steps.process.outputs.database_bump }}
+      database_latest_tag: ${{ steps.process.outputs.database_latest_tag }}
+      database_next_version: ${{ steps.process.outputs.database_next_version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Process all component versions
+        id: process
+        run: |
+          # Function to process version bump for a component
+          process_version() {
+            local component="$1"
+            local prefix="$2"
+
+            LABELS="${{ needs.labels.outputs.labels }}"
+            BUMP="patch"
+            echo "$LABELS" | grep -q 'type: feature' && BUMP="minor"
+            echo "$LABELS" | grep -q 'type: security' && BUMP="minor"
+            echo "$LABELS" | grep -q 'special: breaking change' && BUMP="major"
+
+            TAG=$(git tag --list "${prefix}*" --sort=-v:refname | head -n1)
+            [ -z "$TAG" ] && TAG="${prefix}0.0.0"
+
+            VERSION=$(echo "$TAG" | sed -E "s/^${prefix}([0-9]+\.[0-9]+\.[0-9]+).*/\1/")
+            PRERELEASE=$(echo "$TAG" | sed -nE "s/^${prefix}[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$/\1/p")
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+
+            case "$BUMP" in
+              major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+              minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+              patch) PATCH=$((PATCH + 1)) ;;
+            esac
+
+            NEXT_VERSION="${prefix}${MAJOR}.${MINOR}.${PATCH}${PRERELEASE}"
+
+            {
+              echo "${component}_bump=$BUMP"
+              echo "${component}_latest_tag=$TAG"
+              echo "${component}_next_version=$NEXT_VERSION"
+            } >> "$GITHUB_OUTPUT"
+          }
+
+          # Process both components
+          process_version "api" "api-v"
+          process_version "database" "database-v"
+
+  report:
+    name: Report Summary
+    needs: analyze
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate summary
+        run: |
+          {
+            echo "## 🚀 Suggested Version Bumps"
+            echo "| Component | Bump Type | Latest Tag | Next Version |"
+            echo "|-----------|-----------|------------|--------------|"
+            echo "| API | ${{ needs.analyze.outputs.api_bump_type }} | \`${{ needs.analyze.outputs.api_latest_tag }}\` | \`${{ needs.analyze.outputs.api_next_version }}\` |"
+            echo "| Database | ${{ needs.analyze.outputs.database_bump_type }} | \`${{ needs.analyze.outputs.database_latest_tag }}\` | \`${{ needs.analyze.outputs.database_next_version }}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"

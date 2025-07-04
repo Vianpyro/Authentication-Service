@@ -74,6 +74,15 @@
             }
         },
         {
+            "label": "Connect to local Database",
+            "type": "shell",
+            "command": "psql -h localhost -U ${input:db_username} -d ${input:db_name}",
+            "presentation": {
+                "close": true
+            },
+            "problemMatcher": []
+        },
+        {
             "label": "Run Unit Tests",
             "type": "shell",
             "command": "pg_prove -Q -d ${input:db_name} -U ${input:db_username} sql/tests/*.test.sql",

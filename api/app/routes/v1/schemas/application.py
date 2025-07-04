@@ -27,7 +27,27 @@ class AppFieldTypes:
 
     CreatedAt = CommonFieldTypes.Timestamp
 
+    Description = Annotated[
+        str | None,
+        Field(
+            title="Application Description",
+            max_length=500,
+            description="Optional new description for the application",
+            examples=["Updated description of the application"],
+        ),
+    ]
+
     Id = CommonFieldTypes.UUID
+
+    IsActive = Annotated[
+        bool,
+        Field(
+            title="Is Active",
+            description="Indicates if the application is currently active",
+            default=True,
+            examples=[True, False],
+        ),
+    ]
 
     Slug = Annotated[
         str,
@@ -47,6 +67,7 @@ class AppCreate(BaseModel):
 
     name: AppFieldTypes.AppName
     slug: AppFieldTypes.Slug
+    description: AppFieldTypes.Description | None = None
 
 
 class AppCreateResponse(BaseModel):
@@ -66,3 +87,40 @@ class AppDeleteResponse(BaseModel):
     """Schema for application deletion response."""
 
     name: AppFieldTypes.AppName
+
+
+class AppGet(BaseModel):
+    """Schema for retrieving application details."""
+
+    id: AppFieldTypes.Id
+
+
+class AppGetResponse(BaseModel):
+    """Schema for retrieving application details."""
+
+    name: AppFieldTypes.AppName
+    slug: AppFieldTypes.Slug
+    description: AppFieldTypes.Description
+    is_active: AppFieldTypes.IsActive
+    created_at: AppFieldTypes.CreatedAt
+    updated_at: CommonFieldTypes.Timestamp
+
+
+class AppUpdate(BaseModel):
+    """Schema for updating application details."""
+
+    id: AppFieldTypes.Id
+    new_name: AppFieldTypes.AppName | None = None
+    new_slug: AppFieldTypes.Slug | None = None
+    new_description: AppFieldTypes.Description | None = None
+    new_status: AppFieldTypes.IsActive = True
+
+
+class AppUpdateResponse(BaseModel):
+    """Schema for application update response."""
+
+    name: AppFieldTypes.AppName
+    slug: AppFieldTypes.Slug
+    description: AppFieldTypes.Description
+    is_active: AppFieldTypes.IsActive
+    updated_at: AppFieldTypes.CreatedAt
