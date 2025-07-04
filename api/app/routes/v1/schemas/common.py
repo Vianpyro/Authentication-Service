@@ -7,14 +7,28 @@ across different schema modules to ensure consistency and reduce duplication.
 
 import ipaddress
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from random import choice, randint
 from string import ascii_letters
 from sys import maxsize as MAX_SIZE
 from typing import Annotated
 
 from app.utility.security import create_verification_token, encrypt_field, hash_field
-from pydantic import Field
+from pydantic import AfterValidator, Field
+
+
+def validate_future_timestamp(value: datetime) -> datetime:
+    """Validate that the timestamp is now or in the future."""
+    if value < datetime.now():
+        raise ValueError("Timestamp must be now or in the future")
+    return value
+
+
+def validate_non_future_timestamp(value: datetime) -> datetime:
+    """Validate that the timestamp is not in the future."""
+    if value > datetime.now():
+        raise ValueError("Timestamp cannot be in the future")
+    return value
 
 
 class CommonFieldTypes:
@@ -28,6 +42,19 @@ class CommonFieldTypes:
             description="Encrypted value of the field",
             example=encrypt_field("".join(choice(ascii_letters) for _ in range(10))),
         ),
+    ]
+
+    FutureTimestamp = Annotated[
+        datetime,
+        Field(
+            title="Future Timestamp",
+            description="Timestamp that must be in the future",
+            examples=[
+                datetime.now() + timedelta(days=360),
+                datetime.now() + timedelta(minutes=15),
+            ],
+        ),
+        AfterValidator(validate_future_timestamp),
     ]
 
     HashedField = Annotated[
@@ -61,13 +88,14 @@ class CommonFieldTypes:
         ),
     ]
 
-    Timestamp = Annotated[
+    NonFutureTimestamp = Annotated[
         datetime,
         Field(
-            title="Timestamp",
-            description="Timestamp of the event",
-            example=datetime(2023, 1, 1, 0, 0, 0),
+            title="Non-Future Timestamp",
+            description="Timestamp that cannot be in the future",
+            examples=[datetime.now(), datetime(2020, 1, 1, 0, 0, 0)],
         ),
+        AfterValidator(validate_non_future_timestamp),
     ]
 
     Token = Annotated[

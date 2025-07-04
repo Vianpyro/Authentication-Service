@@ -16,7 +16,7 @@ from .user import UserFieldTypes
 class IPBlocklistTypes:
     """Reusable field types for IP blocklist schemas."""
 
-    BlockedAt = CommonFieldTypes.Timestamp
+    BlockedAt = CommonFieldTypes.NonFutureTimestamp
 
     BlockedByUser = UserFieldTypes.Id
 

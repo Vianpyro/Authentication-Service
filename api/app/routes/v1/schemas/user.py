@@ -11,7 +11,7 @@ from string import ascii_letters
 from typing import Annotated
 
 from app.utility.security import hash_password
-from pydantic import Field, field_validator
+from pydantic import AfterValidator, Field
 
 from .application import AppFieldTypes
 from .common import CommonFieldTypes
@@ -53,11 +53,11 @@ def validate_password_complexity(password: str) -> str:
 class UserFieldTypes:
     """Reusable field types for user schemas."""
 
-    AccountLockedAt = CommonFieldTypes.Timestamp
+    AccountLockedAt = CommonFieldTypes.NonFutureTimestamp
 
     AppId = AppFieldTypes.Id
 
-    CreatedAt = CommonFieldTypes.Timestamp
+    CreatedAt = CommonFieldTypes.NonFutureTimestamp
 
     EmailEncrypted = CommonFieldTypes.EncryptedField
 
@@ -101,7 +101,7 @@ class UserFieldTypes:
         ),
     ]
 
-    LastLoginAt = CommonFieldTypes.Timestamp
+    LastLoginAt = CommonFieldTypes.NonFutureTimestamp
 
     Password = Annotated[
         str,
@@ -111,6 +111,7 @@ class UserFieldTypes:
             min_length=12,
             example="StrongPassword123!",
         ),
+        AfterValidator(validate_password_complexity),
     ]
 
     PasswordHash = Annotated[
@@ -130,11 +131,6 @@ class UserFieldTypes:
 
     PhoneHash = CommonFieldTypes.HashedField
 
-    ScheduledForDeletionAt = CommonFieldTypes.Timestamp
+    ScheduledForDeletionAt = CommonFieldTypes.NonFutureTimestamp
 
-    UpdatedAt = CommonFieldTypes.Timestamp
-
-    @field_validator("password")
-    @classmethod
-    def validate_password(cls, password: str) -> str:
-        return validate_password_complexity(password)
+    UpdatedAt = CommonFieldTypes.NonFutureTimestamp

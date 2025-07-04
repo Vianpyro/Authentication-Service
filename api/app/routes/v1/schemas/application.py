@@ -25,7 +25,7 @@ class AppFieldTypes:
         ),
     ]
 
-    CreatedAt = CommonFieldTypes.Timestamp
+    CreatedAt = CommonFieldTypes.NonFutureTimestamp
 
     Description = Annotated[
         str | None,
@@ -103,7 +103,7 @@ class AppGetResponse(BaseModel):
     description: AppFieldTypes.Description
     is_active: AppFieldTypes.IsActive
     created_at: AppFieldTypes.CreatedAt
-    updated_at: CommonFieldTypes.Timestamp | None = None
+    updated_at: CommonFieldTypes.NonFutureTimestamp
 
 
 class AppUpdate(BaseModel):

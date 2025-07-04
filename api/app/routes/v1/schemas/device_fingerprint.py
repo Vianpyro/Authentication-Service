@@ -36,6 +36,6 @@ class DeviceFingerprintTypes:
 
     UserAgent = CommonFieldTypes.UserAgent
 
-    LastSeenAt = CommonFieldTypes.Timestamp
+    LastSeenAt = CommonFieldTypes.NonFutureTimestamp
 
     UserId = UserFieldTypes.Id
