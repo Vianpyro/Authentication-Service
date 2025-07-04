@@ -32,6 +32,7 @@ jobs:
           - image_name: Database
             dockerfile_path: ./database/Dockerfile
             context: ./database
+
     steps:
       - name: Scan ${{ matrix.image_name }}
         uses: Vianpyro/Template/.github/workflows/docker-image-verification.yml@main

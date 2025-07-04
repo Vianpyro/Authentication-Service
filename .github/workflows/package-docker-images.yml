@@ -65,7 +65,12 @@ jobs:
               if git diff --name-only "$PREV_TAG"..HEAD | grep -qE '^(database/|db/).*\.(sql|py|sh|dockerfile|Dockerfile)$'; then
                 CHANGED_COMPONENTS+=("database")
               fi
-              COMPONENTS=$(printf '%s\n' "${CHANGED_COMPONENTS[@]}" | jq -R . | jq -s .)
+
+              if [ ${#CHANGED_COMPONENTS[@]} -eq 0 ]; then
+                COMPONENTS='[]'
+              else
+                COMPONENTS=$(printf '"%s"\n' "${CHANGED_COMPONENTS[@]}" | jq -s .)
+              fi
             fi
           fi
           echo "components=$COMPONENTS" >> "$GITHUB_OUTPUT"
