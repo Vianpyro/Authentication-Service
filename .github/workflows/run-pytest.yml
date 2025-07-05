@@ -20,8 +20,13 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ['3.12.11', '3.x']
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        python-version:
+          - '3.12.x'
+          - '3.x'
 
     steps:
       - name: Checkout code
@@ -45,13 +50,23 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -r requirements-dev.txt
+          pip install -r api/requirements-dev.txt
           pip install pytest-cov
 
       - name: Run Pytest (Linux/macOS)
         if: runner.os != 'Windows'
-        run: python -m pytest --doctest-modules --junitxml=junit/test-results.xml --cov=com --cov-report=xml --cov-report=html
+        working-directory: api
+        env:
+          MAIL_USERNAME: "github@actions.com"
+          MAIL_PASSWORD: "PassW0rd2PassTests"
+          MAIL_SERVER: "smtp.unittest.com"
+        run: python -m pytest --doctest-modules --junitxml=junit/test-results.xml --cov=app --cov-report=xml --cov-report=html
 
       - name: Run Pytest (Windows)
         if: runner.os == 'Windows'
-        run: python -m pytest --doctest-modules --junitxml=junit/test-results.xml --cov=com --cov-report=xml --cov-report=html
+        working-directory: api
+        env:
+          MAIL_USERNAME: "github@actions.com"
+          MAIL_PASSWORD: "PassW0rd2PassTests"
+          MAIL_SERVER: "smtp.unittest.com"
+        run: python -m pytest --doctest-modules --junitxml=junit/test-results.xml --cov=app --cov-report=xml --cov-report=html

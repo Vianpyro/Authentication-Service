@@ -107,7 +107,7 @@ class UserFieldTypes:
         str,
         Field(
             title="Password",
-            description="User's password, must be at least 12 characters long and contain a mix of letters, numbers, and symbols",
+            description="User's password with minimum 12 characters, letters, numbers, and symbols",
             min_length=12,
             example="StrongPassword123!",
         ),

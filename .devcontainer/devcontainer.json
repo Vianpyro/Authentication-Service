@@ -35,7 +35,7 @@
     },
     "postAttachCommand": {
         "lintSql": "sqlfluff fix database/sql/ -v",
-        "runPytest": "python3 -m pytest api/tests"
+        "runPytest": "cd api && python3 -m pytest tests"
     },
     "remoteUser": "vscode"
 }

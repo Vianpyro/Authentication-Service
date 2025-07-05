@@ -64,6 +64,50 @@ jobs:
       - name: Process all component versions
         id: process
         run: |
+          # Function to get latest tag for a component
+          get_latest_tag() {
+            local prefix="$1"
+            git tag --list "${prefix}*" --sort=-v:refname | head -n1
+          }
+
+          # Function to get version from tag
+          parse_version_from_tag() {
+            local tag="$1"
+            local prefix="$2"
+            echo "$tag" | sed -E "s/^${prefix}([0-9]+\.[0-9]+\.[0-9]+).*/\1/"
+          }
+
+          # Function to get database version from GitHub packages
+          get_database_version_from_packages() {
+            local repo_name
+            local image_name
+            local version
+
+            repo_name=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+            image_name="ghcr.io/$(echo "$repo_name" | cut -d'/' -f1)/$(echo "$repo_name" | cut -d'/' -f2)-database"
+
+            # Log in to GitHub Container Registry
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin > /dev/null 2>&1
+
+            # Pull latest container image
+            if docker pull "$image_name:latest" > /dev/null 2>&1; then
+              # Extract version from tags using docker inspect
+              version=$(docker inspect "$image_name:latest" --format='{{json .RepoTags}}' 2>/dev/null | \
+                jq -r '.[]' 2>/dev/null | \
+                grep -E '^.*:[0-9]+\.[0-9]+\.[0-9]+$' | \
+                sed -E 's/^.*:([0-9]+\.[0-9]+\.[0-9]+)$/\1/' | \
+                head -n1)
+
+              if [ -n "$version" ]; then
+                echo "$version"
+              else
+                echo ""
+              fi
+            else
+              echo ""
+            fi
+          }
+
           # Function to process version bump for a component
           process_version() {
             local component="$1"
@@ -75,10 +119,39 @@ jobs:
             echo "$LABELS" | grep -q 'type: security' && BUMP="minor"
             echo "$LABELS" | grep -q 'special: breaking change' && BUMP="major"
 
-            TAG=$(git tag --list "${prefix}*" --sort=-v:refname | head -n1)
-            [ -z "$TAG" ] && TAG="${prefix}0.0.0"
+            if [ "$component" = "api" ]; then
+              # Read version from api/version.py
+              if [ -f "api/version.py" ]; then
+                VERSION=$(grep -E "^__version__\s*=" api/version.py | sed -E "s/^__version__\s*=\s*['\"]([^'\"]+)['\"].*$/\1/")
+                if [ -n "$VERSION" ]; then
+                  TAG="${prefix}${VERSION}"
+                else
+                  echo "Warning: Could not parse version from api/version.py, falling back to tag-based approach"
+                  TAG=$(get_latest_tag "$prefix")
+                  [ -z "$TAG" ] && TAG="${prefix}0.0.0"
+                  VERSION=$(parse_version_from_tag "$TAG" "$prefix")
+                fi
+              else
+                echo "Warning: api/version.py not found, falling back to tag-based approach"
+                TAG=$(get_latest_tag "$prefix")
+                [ -z "$TAG" ] && TAG="${prefix}0.0.0"
+                VERSION=$(parse_version_from_tag "$TAG" "$prefix")
+              fi
+            elif [ "$component" = "database" ]; then
+              # Try to get database version from GitHub packages
+              PACKAGE_VERSION=$(get_database_version_from_packages)
+              if [ -n "$PACKAGE_VERSION" ]; then
+                VERSION="$PACKAGE_VERSION"
+                TAG="${prefix}${VERSION}"
+                echo "Found database version from packages: $VERSION"
+              else
+                echo "Could not fetch database version from packages, falling back to tag-based approach"
+                TAG=$(get_latest_tag "$prefix")
+                [ -z "$TAG" ] && TAG="${prefix}0.0.0"
+                VERSION=$(parse_version_from_tag "$TAG" "$prefix")
+              fi
+            fi
 
-            VERSION=$(echo "$TAG" | sed -E "s/^${prefix}([0-9]+\.[0-9]+\.[0-9]+).*/\1/")
             PRERELEASE=$(echo "$TAG" | sed -nE "s/^${prefix}[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$/\1/p")
             IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
 
