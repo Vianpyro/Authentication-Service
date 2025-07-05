@@ -7,7 +7,7 @@ across different schema modules to ensure consistency and reduce duplication.
 
 import ipaddress
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from random import choice, randint
 from string import ascii_letters
 from sys import maxsize as MAX_SIZE
@@ -19,14 +19,16 @@ from pydantic import AfterValidator, Field
 
 def validate_future_timestamp(value: datetime) -> datetime:
     """Validate that the timestamp is in the future."""
-    if value <= datetime.now():
+    now = datetime.now(timezone.utc) if value.tzinfo is not None else datetime.now()
+    if value <= now:
         raise ValueError("Timestamp must be in the future")
     return value
 
 
 def validate_non_future_timestamp(value: datetime) -> datetime:
     """Validate that the timestamp is not in the future."""
-    if value > datetime.now():
+    now = datetime.now(timezone.utc) if value.tzinfo is not None else datetime.now()
+    if value > now:
         raise ValueError("Timestamp cannot be in the future")
     return value
 

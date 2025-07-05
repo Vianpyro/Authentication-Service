@@ -136,9 +136,9 @@ class UserFieldTypes:
     UpdatedAt = CommonFieldTypes.NonFutureTimestamp
 
 
-class UserCreate(BaseModel):
+class UserLogin(BaseModel):
     """
-    Schema for creating a new user.
+    Schema for user login.
 
     This schema is used to validate the data required for user registration.
     It includes fields for email, password, and optional metadata.
@@ -146,16 +146,16 @@ class UserCreate(BaseModel):
 
     app_id: UserFieldTypes.AppId
 
-    email = CommonFieldTypes.Email
+    email: CommonFieldTypes.Email
 
     password: UserFieldTypes.Password
 
 
-class UserCreateResponse(BaseModel):
+class UserLoginResponse(BaseModel):
     """
-    Response schema for user creation.
+    Response schema for user login.
 
-    This schema is used to return the user ID after successful registration.
+    This schema is used to return the user ID after successful login.
     """
 
     user_id: UserFieldTypes.Id

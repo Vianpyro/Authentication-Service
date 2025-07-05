@@ -93,6 +93,7 @@ async def register_pending_user(
         HTTPException: Only for unexpected database errors (integrity errors are silenced)
     """
     start = time.monotonic() + jitter(0, 0.1)
+    verification_token = create_verification_token()
 
     try:
         result = await db.execute(
@@ -110,7 +111,7 @@ async def register_pending_user(
             ),
             {
                 "p_app_id": pending_user.app_id,
-                "p_token": create_verification_token(),
+                "p_token": verification_token,
                 "p_email_encrypted": encrypt_email(pending_user.email),
                 "p_email_hash": hash_email(pending_user.email),
                 "p_ip_address": request.client.host if request.client else None,
@@ -213,10 +214,6 @@ async def confirm_pending_user(
         - Atomic database operations to prevent race conditions
     """
 
-    # Extract IP address and user agent from request
-    ip_address = request.client.host if request.client else None
-    user_agent = request.headers.get("user-agent", "")
-
     # Define error mappings for cleaner exception handling
     error_mappings = {
         "Pending user not found": (
@@ -244,14 +241,21 @@ async def confirm_pending_user(
     try:
         result = await db.execute(
             text(
-                "SELECT confirm_pending_user(:p_app_id, :p_token, :p_password, :p_ip_address, :p_user_agent)"
+                """
+                SELECT confirm_pending_user(
+                    p_app_id => :app_id,
+                    p_token => :token,
+                    p_password => :password,
+                    p_ip_address => :ip_address,
+                    p_user_agent => :user_agent
+                )"""
             ),
             {
-                "p_app_id": pending_user.app_id,
-                "p_token": pending_user.token,
-                "p_password": hash_password(pending_user.password),
-                "p_ip_address": ip_address,
-                "p_user_agent": user_agent,
+                "app_id": pending_user.app_id,
+                "token": pending_user.token,
+                "password": hash_password(pending_user.password),
+                "ip_address": request.client.host if request.client else None,
+                "user_agent": request.headers.get("user-agent", ""),
             },
         )
         await db.commit()

@@ -22,12 +22,13 @@ Security Features:
 - Database-level constraints enforcement
 """
 
+from uuid import UUID
+
 from app.routes.v1.schemas.application import (
     AppCreate,
     AppCreateResponse,
     AppDelete,
     AppDeleteResponse,
-    AppGet,
     AppGetResponse,
     AppUpdate,
     AppUpdateResponse,
@@ -41,12 +42,12 @@ router = APIRouter()
 
 
 @router.get(
-    "/",
+    "/{app_id}",
     status_code=status.HTTP_200_OK,
     response_model=AppGetResponse,
     response_description="Application details retrieved successfully",
 )
-async def get_applications(application: AppGet, db: AsyncSession = Depends(get_db)):
+async def get_applications(app_id: UUID, db: AsyncSession = Depends(get_db)):
     """
     Retrieve application details by application ID.
 
@@ -54,7 +55,7 @@ async def get_applications(application: AppGet, db: AsyncSession = Depends(get_d
     metadata, status, and timestamps for a specific application ID.
 
     Args:
-        application: Request data containing the application ID to retrieve
+        app_id: Application ID from URL path parameter
         db: Database session dependency
 
     Returns:
@@ -72,7 +73,7 @@ async def get_applications(application: AppGet, db: AsyncSession = Depends(get_d
     """
     result = await db.execute(
         text("SELECT * FROM applications WHERE id = :p_app_id"),
-        {"p_app_id": application.id},
+        {"p_app_id": app_id},
     )
 
     app_details = result.fetchone()
@@ -186,14 +187,21 @@ async def update_application(
 
     result = await db.execute(
         text(
-            "SELECT * FROM update_application(:p_id, :p_new_name, :p_new_slug, :p_new_description, :p_new_status)"
+            """
+            SELECT * FROM update_application(
+                p_id => :id,
+                p_new_name => :new_name,
+                p_new_slug => :new_slug,
+                p_new_description => :new_description,
+                p_new_status => :new_status
+            )"""
         ),
         {
-            "p_id": application.id,
-            "p_new_name": application.new_name,
-            "p_new_slug": application.new_slug,
-            "p_new_description": application.new_description,
-            "p_new_status": application.is_active,
+            "id": application.id,
+            "new_name": application.new_name,
+            "new_slug": application.new_slug,
+            "new_description": application.new_description,
+            "new_status": application.is_active,
         },
     )
     app_details = result.fetchone()
@@ -204,6 +212,7 @@ async def update_application(
             detail="Application not found",
         )
     await db.commit()
+
     return AppUpdateResponse(
         name=app_details.app_name,
         slug=app_details.slug,
@@ -250,9 +259,10 @@ async def delete_application(
         accounts, tokens, and other application-related data.
     """
     result = await db.execute(
-        text("SELECT delete_application(:p_app_id, :p_app_slug)"),
-        {"p_app_id": application.id, "p_app_slug": application.slug},
+        text("SELECT delete_application(p_app_id => :app_id, p_app_slug => :app_slug)"),
+        {"app_id": application.id, "app_slug": application.slug},
     )
+
     app_name = result.scalar()
     if app_name is None:
         raise HTTPException(
@@ -260,4 +270,5 @@ async def delete_application(
             detail="Application not found or ID/slug mismatch",
         )
     await db.commit()
+
     return AppDeleteResponse(name=app_name)

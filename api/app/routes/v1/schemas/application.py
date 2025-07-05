@@ -71,6 +71,8 @@ class AppFieldTypes:
         ),
     ]
 
+    UpdatedAt = CommonFieldTypes.NonFutureTimestamp
+
 
 class AppCreate(BaseModel):
     """Schema for creating a new application."""
@@ -99,21 +101,15 @@ class AppDeleteResponse(BaseModel):
     name: AppFieldTypes.AppName
 
 
-class AppGet(BaseModel):
-    """Schema for retrieving application details."""
-
-    id: AppFieldTypes.Id
-
-
 class AppGetResponse(BaseModel):
     """Schema for retrieving application details."""
 
     name: AppFieldTypes.AppName
     slug: AppFieldTypes.Slug
-    description: AppFieldTypes.Description
+    description: AppFieldTypes.Description | None = None
     is_active: AppFieldTypes.IsActive
     created_at: AppFieldTypes.CreatedAt
-    updated_at: CommonFieldTypes.NonFutureTimestamp
+    updated_at: CommonFieldTypes.NonFutureTimestamp | None = None
 
 
 class AppUpdate(BaseModel):
@@ -133,4 +129,4 @@ class AppUpdateResponse(BaseModel):
     slug: AppFieldTypes.Slug
     description: AppFieldTypes.Description
     is_active: AppFieldTypes.IsActive
-    updated_at: AppFieldTypes.CreatedAt
+    updated_at: AppFieldTypes.UpdatedAt

@@ -9,7 +9,7 @@ RETURNS TABLE (
     password_hash ARGON2ID_HASH,
     is_email_verified BOOLEAN,
     is_2fa_enabled BOOLEAN,
-    is_suspended BOOLEAN NOT NULL DEFAULT FALSE,
+    is_suspended BOOLEAN
 )
 AS $$
 DECLARE
@@ -24,7 +24,7 @@ BEGIN
 
     -- If no user found, raise an error
     IF NOT FOUND THEN
-        RAISE EXCEPTION 'User not found with email hash: %', p_email_hash;
+        RAISE EXCEPTION 'User not found with specified email';
     END IF;
 
     -- Check if the user is suspended
@@ -45,4 +45,4 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-GRANT EXECUTE ON FUNCTION delete_application TO api;
+GRANT EXECUTE ON FUNCTION login_user TO api;
