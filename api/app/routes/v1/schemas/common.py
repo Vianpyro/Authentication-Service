@@ -34,6 +34,15 @@ def validate_non_future_timestamp(value: datetime) -> datetime:
 class CommonFieldTypes:
     """Common field types used across multiple schema modules."""
 
+    Email = Annotated[
+        str,
+        Field(
+            title="Email",
+            description="Email address of the user",
+            example="user@example.com",
+        ),
+    ]
+
     EncryptedField = Annotated[
         str,
         Field(

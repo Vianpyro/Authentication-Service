@@ -25,3 +25,5 @@ BEGIN
     RETURN v_expires_at;
 END;
 $$;
+
+GRANT EXECUTE ON FUNCTION delete_application TO api;

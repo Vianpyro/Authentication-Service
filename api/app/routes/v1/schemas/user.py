@@ -11,7 +11,7 @@ from string import ascii_letters
 from typing import Annotated
 
 from app.utility.security import hash_password
-from pydantic import AfterValidator, Field
+from pydantic import AfterValidator, BaseModel, Field
 
 from .application import AppFieldTypes
 from .common import CommonFieldTypes
@@ -134,3 +134,28 @@ class UserFieldTypes:
     ScheduledForDeletionAt = CommonFieldTypes.NonFutureTimestamp
 
     UpdatedAt = CommonFieldTypes.NonFutureTimestamp
+
+
+class UserCreate(BaseModel):
+    """
+    Schema for creating a new user.
+
+    This schema is used to validate the data required for user registration.
+    It includes fields for email, password, and optional metadata.
+    """
+
+    app_id: UserFieldTypes.AppId
+
+    email = CommonFieldTypes.Email
+
+    password: UserFieldTypes.Password
+
+
+class UserCreateResponse(BaseModel):
+    """
+    Response schema for user creation.
+
+    This schema is used to return the user ID after successful registration.
+    """
+
+    user_id: UserFieldTypes.Id

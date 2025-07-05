@@ -94,14 +94,6 @@ async def register_pending_user(
     """
     start = time.monotonic() + jitter(0, 0.1)
 
-    email_encrypted = encrypt_email(pending_user.email)
-    email_hash = hash_email(pending_user.email)
-    verification_token = create_verification_token()
-
-    # Extract IP address and user agent from request
-    ip_address = request.client.host if request.client else None
-    user_agent = request.headers.get("user-agent", "")
-
     try:
         result = await db.execute(
             text(
@@ -118,11 +110,11 @@ async def register_pending_user(
             ),
             {
                 "p_app_id": pending_user.app_id,
-                "p_token": verification_token,
-                "p_email_encrypted": email_encrypted,
-                "p_email_hash": email_hash,
-                "p_ip_address": ip_address,
-                "p_user_agent": user_agent,
+                "p_token": create_verification_token(),
+                "p_email_encrypted": encrypt_email(pending_user.email),
+                "p_email_hash": hash_email(pending_user.email),
+                "p_ip_address": request.client.host if request.client else None,
+                "p_user_agent": request.headers.get("user-agent", ""),
             },
         )
         expires_at = result.scalar()
