@@ -16,9 +16,8 @@ on:
 
 jobs:
   scan-images:
-    name: Scan ${{ matrix.image_name }}
-    runs-on: ubuntu-latest
-    strategy:
+    uses: Vianpyro/Template/.github/workflows/docker-image-verification.yml@main
+    with:
       matrix:
         include:
           - image_name: DevContainer
@@ -32,9 +31,3 @@ jobs:
           - image_name: Database
             dockerfile_path: ./database/Dockerfile
             context: ./database
-
-    uses: Vianpyro/Template/.github/workflows/docker-image-verification.yml@main
-    with:
-      image_name: ${{ matrix.image_name }}
-      dockerfile_path: ${{ matrix.dockerfile_path }}
-      context: ${{ matrix.context }}

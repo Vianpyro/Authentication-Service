@@ -12,7 +12,6 @@ import hashlib
 import os
 import secrets
 import unicodedata
-from re import match
 
 import pyotp
 from argon2 import PasswordHasher

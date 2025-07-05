@@ -75,10 +75,31 @@ jobs:
             echo "$LABELS" | grep -q 'type: security' && BUMP="minor"
             echo "$LABELS" | grep -q 'special: breaking change' && BUMP="major"
 
-            TAG=$(git tag --list "${prefix}*" --sort=-v:refname | head -n1)
-            [ -z "$TAG" ] && TAG="${prefix}0.0.0"
+            if [ "$component" = "api" ]; then
+              # Read version from app/api/version.py
+              if [ -f "app/api/version.py" ]; then
+                VERSION=$(grep -E "^__version__\s*=" app/api/version.py | sed -E "s/^__version__\s*=\s*['\"]([^'\"]+)['\"].*$/\1/")
+                if [ -z "$VERSION" ]; then
+                  echo "Warning: Could not parse version from app/api/version.py, falling back to tag-based approach"
+                  TAG=$(git tag --list "${prefix}*" --sort=-v:refname | head -n1)
+                  [ -z "$TAG" ] && TAG="${prefix}0.0.0"
+                  VERSION=$(echo "$TAG" | sed -E "s/^${prefix}([0-9]+\.[0-9]+\.[0-9]+).*/\1/")
+                else
+                  TAG="${prefix}${VERSION}"
+                fi
+              else
+                echo "Warning: app/api/version.py not found, falling back to tag-based approach"
+                TAG=$(git tag --list "${prefix}*" --sort=-v:refname | head -n1)
+                [ -z "$TAG" ] && TAG="${prefix}0.0.0"
+                VERSION=$(echo "$TAG" | sed -E "s/^${prefix}([0-9]+\.[0-9]+\.[0-9]+).*/\1/")
+              fi
+            else
+              # For database, use existing tag-based approach
+              TAG=$(git tag --list "${prefix}*" --sort=-v:refname | head -n1)
+              [ -z "$TAG" ] && TAG="${prefix}0.0.0"
+              VERSION=$(echo "$TAG" | sed -E "s/^${prefix}([0-9]+\.[0-9]+\.[0-9]+).*/\1/")
+            fi
 
-            VERSION=$(echo "$TAG" | sed -E "s/^${prefix}([0-9]+\.[0-9]+\.[0-9]+).*/\1/")
             PRERELEASE=$(echo "$TAG" | sed -nE "s/^${prefix}[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$/\1/p")
             IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
 
