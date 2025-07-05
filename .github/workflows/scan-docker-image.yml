@@ -8,16 +8,14 @@ permissions:
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   schedule:
-    - cron: '0 4 * * 1' # Every monday at 4:00 UTC
-  pull_request: null
+    - cron: '0 4 * * 1' # Every Monday at 4:00 UTC
+  pull_request:
 
 jobs:
   scan-images:
-    name: Scan ${{ matrix.image_name }}
-    runs-on: ubuntu-latest
+    name: Scan ${{ matrix.image_name }} image
     strategy:
       matrix:
         include:
@@ -32,10 +30,9 @@ jobs:
           - image_name: Database
             dockerfile_path: ./database/Dockerfile
             context: ./database
-    steps:
-      - name: Scan ${{ matrix.image_name }}
-        uses: Vianpyro/Template/.github/workflows/docker-image-verification.yml@main
-        with:
-          image_name: ${{ matrix.image_name }}
-          dockerfile_path: ${{ matrix.dockerfile_path }}
-          context: ${{ matrix.context }}
+
+    uses: Vianpyro/Template/.github/workflows/docker-image-verification.yml@main
+    with:
+      image_name: ${{ matrix.image_name }}
+      dockerfile_path: ${{ matrix.dockerfile_path }}
+      context: ${{ matrix.context }}

@@ -25,7 +25,17 @@ class AppFieldTypes:
         ),
     ]
 
-    CreatedAt = CommonFieldTypes.Timestamp
+    CreatedAt = CommonFieldTypes.NonFutureTimestamp
+
+    Description = Annotated[
+        str | None,
+        Field(
+            title="Application Description",
+            max_length=500,
+            description="Optional new description for the application",
+            examples=["Updated description of the application"],
+        ),
+    ]
 
     Description = Annotated[
         str | None,
@@ -103,7 +113,7 @@ class AppGetResponse(BaseModel):
     description: AppFieldTypes.Description
     is_active: AppFieldTypes.IsActive
     created_at: AppFieldTypes.CreatedAt
-    updated_at: CommonFieldTypes.Timestamp
+    updated_at: CommonFieldTypes.NonFutureTimestamp
 
 
 class AppUpdate(BaseModel):
@@ -113,7 +123,7 @@ class AppUpdate(BaseModel):
     new_name: AppFieldTypes.AppName | None = None
     new_slug: AppFieldTypes.Slug | None = None
     new_description: AppFieldTypes.Description | None = None
-    new_status: AppFieldTypes.IsActive = True
+    is_active: AppFieldTypes.IsActive = True
 
 
 class AppUpdateResponse(BaseModel):

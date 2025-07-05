@@ -12,9 +12,9 @@ from .user import UserFieldTypes
 class PasswordResetTokenTypes:
     """Reusable field types for password reset token schemas."""
 
-    CreatedAt = CommonFieldTypes.Timestamp
+    CreatedAt = CommonFieldTypes.NonFutureTimestamp
 
-    ExpiresAt = CommonFieldTypes.Timestamp
+    ExpiresAt = CommonFieldTypes.FutureTimestamp
 
     Id = CommonFieldTypes.Id
 

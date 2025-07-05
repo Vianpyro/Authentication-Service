@@ -21,7 +21,7 @@ class MFABackupCodeTypes:
 
     CodeHash = CommonFieldTypes.HashedField
 
-    CreatedAt = CommonFieldTypes.Timestamp
+    CreatedAt = CommonFieldTypes.NonFutureTimestamp
 
     Id = CommonFieldTypes.UUID
 

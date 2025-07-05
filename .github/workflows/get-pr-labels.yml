@@ -29,7 +29,12 @@ jobs:
       - name: Get PR labels
         id: labels
         run: |
-          LABELS=$(gh pr view "${{ github.event.pull_request.number }}" --json labels --jq '[.labels[].name] | join(" ")')
+          if [ "${{ github.event_name }}" = "pull_request" ] && [ -n "${{ github.event.pull_request.number }}" ]; then
+            LABELS=$(gh pr view "${{ github.event.pull_request.number }}" --json labels --jq '[.labels[].name] | join(" ")')
+          else
+            # No PR context, return empty labels
+            LABELS=""
+          fi
           echo "labels=$LABELS" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ github.token }}

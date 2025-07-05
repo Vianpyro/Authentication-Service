@@ -19,9 +19,9 @@ class DeviceFingerprintTypes:
 
     AppId = AppFieldTypes.Id
 
-    CreatedAt = CommonFieldTypes.Timestamp
+    CreatedAt = CommonFieldTypes.NonFutureTimestamp
 
-    ExpiresAt = CommonFieldTypes.Timestamp
+    ExpiresAt = CommonFieldTypes.FutureTimestamp
 
     Id = CommonFieldTypes.Id
 
