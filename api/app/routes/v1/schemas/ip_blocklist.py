@@ -30,7 +30,7 @@ class IPBlocklistTypes:
                 timedelta(minutes=15),
                 timedelta(days=3),
                 timedelta(days=28),
-                timedelta(years=10),
+                timedelta(weeks=52 * 10),  # 10 years
             ],
         ),
     ]
