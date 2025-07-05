@@ -56,9 +56,17 @@ jobs:
       - name: Run Pytest (Linux/macOS)
         if: runner.os != 'Windows'
         working-directory: api
+        env:
+          MAIL_USERNAME: "github@actions.com"
+          MAIL_PASSWORD: "PassW0rd2PassTests"
+          MAIL_SERVER: "smtp.unittest.com"
         run: python -m pytest --doctest-modules --junitxml=junit/test-results.xml --cov=app --cov-report=xml --cov-report=html
 
       - name: Run Pytest (Windows)
         if: runner.os == 'Windows'
         working-directory: api
+        env:
+          MAIL_USERNAME: "github@actions.com"
+          MAIL_PASSWORD: "PassW0rd2PassTests"
+          MAIL_SERVER: "smtp.unittest.com"
         run: python -m pytest --doctest-modules --junitxml=junit/test-results.xml --cov=app --cov-report=xml --cov-report=html
