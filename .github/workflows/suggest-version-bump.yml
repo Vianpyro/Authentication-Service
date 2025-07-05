@@ -80,13 +80,18 @@ jobs:
           # Function to get database version from GitHub packages
           get_database_version_from_packages() {
             local repo_name=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-            local package_url="https://api.github.com/orgs/$(echo "$repo_name" | cut -d'/' -f1)/packages/container/$(echo "$repo_name" | cut -d'/' -f2)-database/versions"
+            local image_name="ghcr.io/$(echo "$repo_name" | cut -d'/' -f1)/$(echo "$repo_name" | cut -d'/' -f2)-database"
 
-            # Try to fetch from GitHub packages API
-            local version=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-              -H "Accept: application/vnd.github.v3+json" \
-              "$package_url" | jq -r '.[0].metadata.container.tags[]' 2>/dev/null | \
-              grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -n1)
+            # Log in to GitHub Container Registry
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # Pull latest container image and extract version from tags
+            local version=$(docker pull "$image_name:latest" 2>/dev/null && \
+              docker inspect "$image_name:latest" --format='{{json .RepoTags}}' 2>/dev/null | \
+              jq -r '.[]' 2>/dev/null | \
+              grep -E '^.*:[0-9]+\.[0-9]+\.[0-9]+$' | \
+              sed -E 's/^.*:([0-9]+\.[0-9]+\.[0-9]+)$/\1/' | \
+              head -n1)
 
             if [ -n "$version" ]; then
               echo "$version"
