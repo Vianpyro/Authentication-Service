@@ -64,6 +64,37 @@ jobs:
       - name: Process all component versions
         id: process
         run: |
+          # Function to get latest tag for a component
+          get_latest_tag() {
+            local prefix="$1"
+            git tag --list "${prefix}*" --sort=-v:refname | head -n1
+          }
+
+          # Function to get version from tag
+          parse_version_from_tag() {
+            local tag="$1"
+            local prefix="$2"
+            echo "$tag" | sed -E "s/^${prefix}([0-9]+\.[0-9]+\.[0-9]+).*/\1/"
+          }
+
+          # Function to get database version from GitHub packages
+          get_database_version_from_packages() {
+            local repo_name=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+            local package_url="https://api.github.com/orgs/$(echo "$repo_name" | cut -d'/' -f1)/packages/container/$(echo "$repo_name" | cut -d'/' -f2)-database/versions"
+
+            # Try to fetch from GitHub packages API
+            local version=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "$package_url" | jq -r '.[0].metadata.container.tags[]' 2>/dev/null | \
+              grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -n1)
+
+            if [ -n "$version" ]; then
+              echo "$version"
+            else
+              echo ""
+            fi
+          }
+
           # Function to process version bump for a component
           process_version() {
             local component="$1"
@@ -76,28 +107,36 @@ jobs:
             echo "$LABELS" | grep -q 'special: breaking change' && BUMP="major"
 
             if [ "$component" = "api" ]; then
-              # Read version from app/api/version.py
-              if [ -f "app/api/version.py" ]; then
-                VERSION=$(grep -E "^__version__\s*=" app/api/version.py | sed -E "s/^__version__\s*=\s*['\"]([^'\"]+)['\"].*$/\1/")
-                if [ -z "$VERSION" ]; then
-                  echo "Warning: Could not parse version from app/api/version.py, falling back to tag-based approach"
-                  TAG=$(git tag --list "${prefix}*" --sort=-v:refname | head -n1)
-                  [ -z "$TAG" ] && TAG="${prefix}0.0.0"
-                  VERSION=$(echo "$TAG" | sed -E "s/^${prefix}([0-9]+\.[0-9]+\.[0-9]+).*/\1/")
-                else
+              # Read version from api/version.py
+              if [ -f "api/version.py" ]; then
+                VERSION=$(grep -E "^__version__\s*=" api/version.py | sed -E "s/^__version__\s*=\s*['\"]([^'\"]+)['\"].*$/\1/")
+                if [ -n "$VERSION" ]; then
                   TAG="${prefix}${VERSION}"
+                else
+                  echo "Warning: Could not parse version from api/version.py, falling back to tag-based approach"
+                  TAG=$(get_latest_tag "$prefix")
+                  [ -z "$TAG" ] && TAG="${prefix}0.0.0"
+                  VERSION=$(parse_version_from_tag "$TAG" "$prefix")
                 fi
               else
-                echo "Warning: app/api/version.py not found, falling back to tag-based approach"
-                TAG=$(git tag --list "${prefix}*" --sort=-v:refname | head -n1)
+                echo "Warning: api/version.py not found, falling back to tag-based approach"
+                TAG=$(get_latest_tag "$prefix")
                 [ -z "$TAG" ] && TAG="${prefix}0.0.0"
-                VERSION=$(echo "$TAG" | sed -E "s/^${prefix}([0-9]+\.[0-9]+\.[0-9]+).*/\1/")
+                VERSION=$(parse_version_from_tag "$TAG" "$prefix")
               fi
-            else
-              # For database, use existing tag-based approach
-              TAG=$(git tag --list "${prefix}*" --sort=-v:refname | head -n1)
-              [ -z "$TAG" ] && TAG="${prefix}0.0.0"
-              VERSION=$(echo "$TAG" | sed -E "s/^${prefix}([0-9]+\.[0-9]+\.[0-9]+).*/\1/")
+            elif [ "$component" = "database" ]; then
+              # Try to get database version from GitHub packages
+              PACKAGE_VERSION=$(get_database_version_from_packages)
+              if [ -n "$PACKAGE_VERSION" ]; then
+                VERSION="$PACKAGE_VERSION"
+                TAG="${prefix}${VERSION}"
+                echo "Found database version from packages: $VERSION"
+              else
+                echo "Could not fetch database version from packages, falling back to tag-based approach"
+                TAG=$(get_latest_tag "$prefix")
+                [ -z "$TAG" ] && TAG="${prefix}0.0.0"
+                VERSION=$(parse_version_from_tag "$TAG" "$prefix")
+              fi
             fi
 
             PRERELEASE=$(echo "$TAG" | sed -nE "s/^${prefix}[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$/\1/p")
