@@ -8,16 +8,15 @@ permissions:
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   schedule:
-    - cron: '0 4 * * 1' # Every monday at 4:00 UTC
-  pull_request: null
+    - cron: '0 4 * * 1' # Every Monday at 4:00 UTC
+  pull_request:
 
 jobs:
   scan-images:
-    uses: Vianpyro/Template/.github/workflows/docker-image-verification.yml@main
-    with:
+    name: Scan ${{ matrix.image_name }} image
+    strategy:
       matrix:
         include:
           - image_name: DevContainer
@@ -31,3 +30,9 @@ jobs:
           - image_name: Database
             dockerfile_path: ./database/Dockerfile
             context: ./database
+
+    uses: Vianpyro/Template/.github/workflows/docker-image-verification.yml@main
+    with:
+      image_name: ${{ matrix.image_name }}
+      dockerfile_path: ${{ matrix.dockerfile_path }}
+      context: ${{ matrix.context }}
