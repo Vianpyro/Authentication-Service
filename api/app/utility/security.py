@@ -1,241 +1,137 @@
 """
-Security utility module for encryption, hashing, and authentication.
-
-This module provides functions and constants for handling password hashing,
-field encryption/decryption, OTP verification, and normalization of sensitive
-fields such as email and phone numbers. It is used throughout the application
-to ensure secure handling of user credentials and sensitive data.
+Security module for hashing, encryption, and token verification.
 """
 
 import base64
 import hashlib
+import hmac
 import os
 import secrets
 import unicodedata
+from re import search
 
 import pyotp
 from argon2 import PasswordHasher
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from dotenv import load_dotenv
 
+load_dotenv()
+
+# --- Constants ---
 ph = PasswordHasher()
+AES_KEY = bytes.fromhex(os.getenv("AES_SECRET_KEY") or "")
+PASSWORD_PEPPER = os.getenv("PASSWORD_PEPPER", "")
+TOKEN_PEPPER = os.getenv("TOKEN_PEPPER", "").encode("utf-8")
 
-AES_KEY = bytes.fromhex(os.getenv("AES_SECRET_KEY", os.urandom(32).hex()))
-PEPPER = os.getenv("PEPPER", "SuperSecretPepper")
-
-
-def create_token(length: int) -> str:
-    """
-    Generate a secure random token for session management.
-    Returns:
-        str: A URL-safe, random token string.
-    """
-    return secrets.token_urlsafe(length)
+if not AES_KEY or not PASSWORD_PEPPER or not TOKEN_PEPPER:
+    raise RuntimeError("Missing required secrets: AES_SECRET_KEY, PASSWORD_PEPPER, or TOKEN_PEPPER")
 
 
-def create_verification_token() -> str:
-    """
-    Generate a secure random token for email verification.
-
-    Returns:
-        str: A URL-safe, random token string.
-    """
-    return create_token(32)
+# --- Token Utilities ---
+def create_token(num_bytes: int = 32) -> str:
+    """Generate a secure URL-safe token."""
+    return secrets.token_urlsafe(num_bytes)
 
 
-def create_access_token() -> str:
-    """
-    Generate a secure random token for access control.
-
-    Returns:
-        str: A URL-safe, random token string.
-    """
-    return create_token(32)
+def hash_token(token: str) -> bytes:
+    """Hash a token using HMAC with SHA-256 and a pepper."""
+    return hmac.new(TOKEN_PEPPER, token.encode("utf-8"), hashlib.sha256).digest()
 
 
-def create_refresh_token() -> str:
-    """
-    Generate a secure random token for refresh operations.
-
-    Returns:
-        str: A URL-safe, random token string.
-    """
-    return create_token(64)
+def verify_token(token: str, stored_hash: bytes) -> bool:
+    """Constant-time check of a token."""
+    return hmac.compare_digest(hash_token(token), stored_hash)
 
 
-def encrypt_field(value: str) -> str:
-    """
-    Encrypt a value using AES-256-GCM.
-
-    Args:
-        value (str): The value to encrypt.
-
-    Returns:
-        str: Base64-encoded string of IV + ciphertext + tag.
-    """
-    aesgcm = AESGCM(AES_KEY)
-    iv = os.urandom(12)  # 96-bit IV recommended for AES-GCM
-    ciphertext = aesgcm.encrypt(iv, value.encode("utf-8"), associated_data=None)
-    return base64.b64encode(iv + ciphertext).decode("utf-8")
-
-
-def decrypt_field(encrypted_base64: str) -> str:
-    """
-    Decrypt a value encrypted with AES-256-GCM.
-
-    Args:
-        encrypted_base64 (str): The base64-encoded encrypted value.
-
-    Returns:
-        str: The decrypted string.
-    """
-    encrypted_data = base64.b64decode(encrypted_base64)
-    iv, ciphertext = encrypted_data[:12], encrypted_data[12:]
-    aesgcm = AESGCM(AES_KEY)
-    decrypted = aesgcm.decrypt(iv, ciphertext, associated_data=None)
-    return decrypted.decode("utf-8")
-
-
-def hash_field(value: str) -> str:
-    """
-    Generate a SHA-256 hash of a field (used for fast lookup).
-
-    Args:
-        value (str): The value to hash.
-
-    Returns:
-        str: The SHA-256 hash as a hexadecimal string.
-    """
-    return hashlib.sha256(value.encode("utf-8")).hexdigest()
-
-
+# --- Password Utilities ---
 def hash_password(password: str) -> str:
-    """
-    Hash a password using Argon2 and a pepper.
-
-    Args:
-        password (str): The plaintext password.
-
-    Returns:
-        str: The Argon2 hash of the peppered password.
-    """
-    normalized = unicodedata.normalize("NFKC", password)
-    peppered = normalized + PEPPER
+    """Hash a password using Argon2 and a pepper."""
+    peppered = unicodedata.normalize("NFKC", password) + PASSWORD_PEPPER
     return ph.hash(peppered)
 
 
-def verify_otp(
-    secret: str, otp_code: str, otp_method: str = "TOTP", counter: int = 0
-) -> bool:
-    """
-    Verify a one-time password (OTP) against a secret using TOTP or HOTP.
-
-    Args:
-        secret (str): The OTP secret.
-        otp_code (str): The OTP code to verify.
-        otp_method (str): The OTP method ("TOTP" or "HOTP").
-        counter (int): The HOTP counter (required for HOTP).
-
-    Returns:
-        bool: True if the OTP is valid, False otherwise.
-    """
-    try:
-        match otp_method:
-            case "TOTP":
-                return pyotp.TOTP(secret).verify(otp_code)
-            case "HOTP":
-                return pyotp.HOTP(secret).verify(otp_code, counter)
-            case _:
-                raise ValueError("Unsupported OTP method")
-    except Exception:
-        return False
-
-
 def verify_password(password: str, hashed_password: str) -> bool:
-    """
-    Verify a password against a hashed password.
-
-    Args:
-        hashed_password (str): The Argon2 hashed password.
-        password (str): The plaintext password to verify.
-
-    Returns:
-        bool: True if the password matches, False otherwise.
-    """
-    peppered = unicodedata.normalize("NFKC", password) + PEPPER
+    """Verify a password using Argon2 and pepper."""
+    peppered = unicodedata.normalize("NFKC", password) + PASSWORD_PEPPER
     try:
         return ph.verify(hashed_password, peppered)
     except Exception:
         return False
 
 
+def validate_password_complexity(password: str) -> str:
+    """
+    Validates a password based on the following criteria:
+    - At least 12 characters long.
+    - Contains at least one uppercase letter (A-Z).
+    - Contains at least one lowercase letter (a-z).
+    - Contains at least one digit (0-9).
+    - Contains at least one special character (any non-alphanumeric character).
+    """
+    error_messages = []
+
+    if len(password) < 12:
+        error_messages.append("must be at least 12 characters long")
+
+    if not search(r"[A-Z]", password):
+        error_messages.append("must contain at least one uppercase letter")
+
+    if not search(r"[a-z]", password):
+        error_messages.append("must contain at least one lowercase letter")
+
+    if not search(r"\d", password):
+        error_messages.append("must contain at least one digit")
+
+    if not search(r"[^A-Za-z0-9]", password):
+        error_messages.append("must contain at least one special character")
+
+    if error_messages:
+        combined_message = f"Password validation failed: {'; '.join(error_messages)}"
+        raise ValueError(combined_message)
+
+    return password
+
+
+# --- AES Encryption ---
+def encrypt_field(value: str) -> str:
+    """Encrypt a string using AES-256-GCM (returns base64 string)."""
+    aesgcm = AESGCM(AES_KEY)
+    iv = os.urandom(12)
+    ciphertext = aesgcm.encrypt(iv, value.encode("utf-8"), associated_data=None)
+    return base64.b64encode(iv + ciphertext).decode("utf-8")
+
+
+def decrypt_field(encrypted_base64: str) -> str:
+    """Decrypt a base64-encoded AES-256-GCM encrypted value."""
+    data = base64.b64decode(encrypted_base64)
+    iv, ciphertext = data[:12], data[12:]
+    return AESGCM(AES_KEY).decrypt(iv, ciphertext, associated_data=None).decode("utf-8")
+
+
+# --- Field Hashing ---
+def hash_field(value: str) -> str:
+    """SHA-256 hash of a UTF-8 value, for indexing."""
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
 def hash_email(email: str) -> str:
-    """
-    Generate a SHA-256 hash of the normalized email (used for fast lookup).
-    Normalizes by removing subdomain aliases (part after + and before @) to prevent duplicates.
-
-    Args:
-        email (str): The email address.
-
-    Returns:
-        str: The SHA-256 hash of the normalized email.
-    """
-    normalized_email = email.lower()
-
-    if "+" in normalized_email:
-        local_part, domain_part = normalized_email.rsplit("@", 1)
-        local_part = local_part.split("+")[0]
-        normalized_email = f"{local_part}@{domain_part}"
-
-    return hash_field(normalized_email)
+    """Normalize + hash email (removes aliasing with '+')."""
+    email = email.lower()
+    if "+" in email:
+        local, domain = email.rsplit("@", 1)
+        local = local.split("+")[0]
+        email = f"{local}@{domain}"
+    return hash_field(email)
 
 
-def hash_phone(phone: str) -> str:
-    """
-    Generate a SHA-256 hash of the phone number (used for fast lookup).
-
-    Args:
-        phone (str): The phone number.
-
-    Returns:
-        str: The SHA-256 hash of the phone number.
-    """
-    return hash_field(phone)
-
-
-def hash_token(token: str) -> str:
-    """
-    Generate a SHA-256 hash of the token (used for fast lookup).
-
-    Args:
-        token (str): The token to hash.
-
-    Returns:
-        str: The SHA-256 hash of the token.
-    """
-    return hash_field(token)
-
-
-def encrypt_email(email: str) -> str:
-    """
-    Encrypt the email address.
-
-    Args:
-        email (str): The email address to encrypt.
-
-    Returns:
-        str: The encrypted email.
-    """
-    return encrypt_field(email)
-
-
-def encrypt_phone(phone: str) -> str:
-    """
-    Encrypt the normalized phone number.
-
-    Args:
-        phone (str): The phone number to encrypt.
-
-    Returns:
-        str: The encrypted phone number.
-    """
-    return encrypt_field(phone)
+# --- OTP Verification ---
+def verify_otp(secret: str, otp_code: str, method: str = "TOTP", counter: int = 0) -> bool:
+    """Verify a one-time password (TOTP or HOTP)."""
+    try:
+        if method == "TOTP":
+            return pyotp.TOTP(secret).verify(otp_code)
+        elif method == "HOTP":
+            return pyotp.HOTP(secret).verify(otp_code, counter)
+        return False
+    except Exception:
+        return False

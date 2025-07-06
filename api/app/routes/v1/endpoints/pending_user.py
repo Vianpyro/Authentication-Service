@@ -36,12 +36,9 @@ from app.routes.v1.schemas.pending_user import (
 )
 from app.utility.database import get_db
 from app.utility.email.sender import send_email_background
-from app.utility.security import (
-    create_verification_token,
-    encrypt_email,
-    hash_email,
-    hash_password,
-)
+from app.utility.security import create_token
+from app.utility.security import encrypt_field as encrypt_email
+from app.utility.security import hash_email, hash_password
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
@@ -93,7 +90,7 @@ async def register_pending_user(
         HTTPException: Only for unexpected database errors (integrity errors are silenced)
     """
     start = time.monotonic() + jitter(0, 0.1)
-    verification_token = create_verification_token()
+    verification_token = create_token()
 
     try:
         result = await db.execute(

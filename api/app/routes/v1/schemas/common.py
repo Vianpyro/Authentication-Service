@@ -13,7 +13,7 @@ from string import ascii_letters
 from sys import maxsize as MAX_SIZE
 from typing import Annotated
 
-from app.utility.security import create_verification_token, encrypt_field, hash_field
+from app.utility.security import create_token, encrypt_field, hash_field
 from pydantic import AfterValidator, Field
 
 
@@ -116,8 +116,8 @@ class CommonFieldTypes:
             pattern=r"^[a-zA-Z0-9_-]{32,128}$",
             min_length=32,
             max_length=128,
-            description="Unique token for the pending user",
-            example=create_verification_token(),
+            description="Secure token used for authentication",
+            example=create_token(),
         ),
     ]
 
