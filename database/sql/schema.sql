@@ -45,7 +45,7 @@ CREATE TABLE users (
     phone_encrypted NON_EMPTY_TEXT,
     phone_hash SHA_256_HASH,
 
-    is_email_verified BOOLEAN NOT NULL DEFAULT TRUE,
+    is_email_verified BOOLEAN NOT NULL DEFAULT FALSE,
     is_recovery_email_verified BOOLEAN NOT NULL DEFAULT FALSE,
     is_2fa_enabled BOOLEAN NOT NULL DEFAULT FALSE,
     is_suspended BOOLEAN NOT NULL DEFAULT FALSE,

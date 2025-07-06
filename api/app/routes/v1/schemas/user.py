@@ -5,7 +5,7 @@ This module provides Pydantic schemas for validating user-related data,
 such as user requests and responses.
 """
 
-from random import choice
+from random import choice, randint
 from re import search
 from string import ascii_letters
 from typing import Annotated
@@ -158,4 +158,33 @@ class UserLoginResponse(BaseModel):
     This schema is used to return the user ID after successful login.
     """
 
-    user_id: UserFieldTypes.Id
+    id: UserFieldTypes.Id
+
+    is_email_verified: UserFieldTypes.IsEmailVerified
+
+    is_2fa_enabled: UserFieldTypes.Is2FAEnabled
+
+    class Config:
+        from_attributes = True
+
+
+class UserTOTPVerify(BaseModel):
+    """
+    Schema for verifying TOTP (Time-based One-Time Password).
+
+    This schema is used to validate the TOTP code provided by the user during login.
+    It includes fields for the user ID and the TOTP code.
+    """
+
+    id: UserFieldTypes.Id
+
+    totp_code: Annotated[
+        str,
+        Field(
+            title="TOTP Code",
+            description="Time-based One-Time Password code for 2FA verification",
+            min_length=6,
+            max_length=6,
+            example=randint(100000, 999999),
+        ),
+    ]

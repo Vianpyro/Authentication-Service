@@ -5,11 +5,10 @@ CREATE OR REPLACE FUNCTION login_user(
     p_user_agent TEXT
 )
 RETURNS TABLE (
-    user_id UUID,
+    id UUID,
     password_hash ARGON2ID_HASH,
     is_email_verified BOOLEAN,
-    is_2fa_enabled BOOLEAN,
-    is_suspended BOOLEAN
+    is_2fa_enabled BOOLEAN
 )
 AS $$
 DECLARE
@@ -32,16 +31,12 @@ BEGIN
         RAISE EXCEPTION 'User is suspended';
     END IF;
 
-    -- Return user details
+    -- Return user details using the variable data
     RETURN QUERY SELECT
         v_user.id,
         v_user.password_hash,
         v_user.is_email_verified,
-        v_user.is_2fa_enabled,
-        v_user.is_suspended
-    FROM users
-    WHERE id = v_user.id
-    AND app_id = p_app_id;
+        v_user.is_2fa_enabled;
 END;
 $$ LANGUAGE plpgsql;
 

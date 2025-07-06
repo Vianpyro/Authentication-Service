@@ -44,30 +44,58 @@ async def login_user(
     Raises:
         HTTPException: If authentication fails or user is not found
     """
-    result = await db.execute(
-        text(
-            """
-            SELECT * FROM login_user (
-                p_app_id => :app_id,
-                p_email_hash => :email_hash,
-                p_ip_address => :ip_address,
-                p_user_agent => :user_agent
-            )"""
+
+    # Define error mappings for cleaner exception handling
+    error_mappings = {
+        "User not found with specified email": (
+            status.HTTP_401_UNAUTHORIZED,
+            "Invalid credentials",
         ),
-        {
-            "app_id": user.app_id,
-            "email_hash": hash_email(user.email),
-            "ip_address": request.client.host if request.client else None,
-            "user_agent": request.headers.get("user-agent", ""),
-        },
-    )
-    user_data = result.fetchone()
+        "Invalid password": (
+            status.HTTP_401_UNAUTHORIZED,
+            "Invalid credentials",
+        ),
+        "User is suspended": (
+            status.HTTP_403_FORBIDDEN,
+            "User account is suspended",
+        ),
+    }
 
-    if not user_data or not verify_password(user.password, user_data.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
-            headers={"WWW-Authenticate": "Bearer"},
+    try:
+        result = await db.execute(
+            text(
+                """
+                SELECT * FROM login_user (
+                    p_app_id => :app_id,
+                    p_email_hash => :email_hash,
+                    p_ip_address => :ip_address,
+                    p_user_agent => :user_agent
+                )"""
+            ),
+            {
+                "app_id": user.app_id,
+                "email_hash": hash_email(user.email),
+                "ip_address": request.client.host if request.client else None,
+                "user_agent": request.headers.get("user-agent", ""),
+            },
         )
+        user_data = result.fetchone()
 
-    return UserLoginResponse(user_id=user_data.id)
+        if not user_data:
+            raise ValueError("User not found with specified email")
+
+        if not verify_password(user.password, user_data.password_hash):
+            raise ValueError("Invalid password")
+
+        return UserLoginResponse.model_validate(user_data)
+
+    except Exception as e:
+        error_str = str(e)
+
+        # Check for known database errors
+        for error_msg, (status_code, detail) in error_mappings.items():
+            if error_msg in error_str:
+                raise HTTPException(status_code=status_code, detail=detail)
+
+        # Re-raise unknown exceptions
+        raise
