@@ -6,13 +6,13 @@ CREATE OR REPLACE FUNCTION register_application(
 RETURNS UUID
 AS $$
 DECLARE
-    v_id UUID;
+    v_app_id UUID;
 BEGIN
     INSERT INTO applications (slug, name, description)
     VALUES (p_slug, p_name, p_description)
-    RETURNING id INTO v_id;
+    RETURNING id INTO v_app_id;
 
-    RETURN v_id;
+    RETURN v_app_id;
 END;
 $$ LANGUAGE plpgsql;
 

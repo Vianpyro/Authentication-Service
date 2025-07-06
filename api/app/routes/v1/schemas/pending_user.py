@@ -47,6 +47,7 @@ class PendingUserCreate(BaseModel):
 
     email: CommonFieldTypes.Email
 
+
 class PendingUserConfirmation(BaseModel):
     """Schema for confirming a pending user registration."""
 

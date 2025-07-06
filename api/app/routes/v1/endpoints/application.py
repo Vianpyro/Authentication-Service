@@ -42,12 +42,12 @@ router = APIRouter()
 
 
 @router.get(
-    "/{id}",
+    "/{app_id}",
     status_code=status.HTTP_200_OK,
     response_model=AppGetResponse,
     response_description="Application details retrieved successfully",
 )
-async def get_applications(id: UUID, db: AsyncSession = Depends(get_db)):
+async def get_applications(app_id: UUID, db: AsyncSession = Depends(get_db)):
     """
     Retrieve application details by application ID.
 
@@ -55,7 +55,7 @@ async def get_applications(id: UUID, db: AsyncSession = Depends(get_db)):
     metadata, status, and timestamps for a specific application ID.
 
     Args:
-        id: Application ID from URL path parameter
+        app_id: Application ID from URL path parameter
         db: Database session dependency
 
     Returns:
@@ -72,7 +72,7 @@ async def get_applications(id: UUID, db: AsyncSession = Depends(get_db)):
             - 404 Not Found: Application with specified ID does not exist
     """
     result = await db.execute(
-        text("SELECT * FROM get_application(p_id => :id)"), {"id": id}
+        text("SELECT * FROM get_application(p_app_id => :app_id)"), {"app_id": app_id}
     )
 
     data = result.fetchone()
@@ -130,7 +130,7 @@ async def register_application(
     )
     app_id = result.scalar()
     await db.commit()
-    return AppCreateResponse(id=app_id)
+    return AppCreateResponse(app_id=app_id)
 
 
 @router.patch(
@@ -181,7 +181,7 @@ async def update_application(
         text(
             """
             SELECT * FROM update_application(
-                p_id => :id,
+                p_app_id => :app_id,
                 p_new_name => :new_name,
                 p_new_slug => :new_slug,
                 p_new_description => :new_description,
@@ -189,7 +189,7 @@ async def update_application(
             )"""
         ),
         {
-            "id": application.id,
+            "app_id": application.app_id,
             "new_name": application.new_name,
             "new_slug": application.new_slug,
             "new_description": application.new_description,
@@ -251,8 +251,8 @@ async def delete_application(
         accounts, tokens, and other application-related data.
     """
     result = await db.execute(
-        text("SELECT delete_application(p_id => :id, p_slug => :slug)"),
-        {"id": application.id, "slug": application.slug},
+        text("SELECT delete_application(p_app_id => :app_id, p_slug => :slug)"),
+        {"app_id": application.app_id, "slug": application.slug},
     )
 
     name = result.scalar()

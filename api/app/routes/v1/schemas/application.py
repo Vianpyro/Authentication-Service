@@ -85,13 +85,13 @@ class AppCreate(BaseModel):
 class AppCreateResponse(BaseModel):
     """Schema for application response."""
 
-    id: AppFieldTypes.Id
+    app_id: AppFieldTypes.Id
 
 
 class AppDelete(BaseModel):
     """Schema for deleting an application."""
 
-    id: AppFieldTypes.Id
+    app_id: AppFieldTypes.Id
     slug: AppFieldTypes.Slug
 
 
@@ -118,7 +118,7 @@ class AppGetResponse(BaseModel):
 class AppUpdate(BaseModel):
     """Schema for updating application details."""
 
-    id: AppFieldTypes.Id
+    app_id: AppFieldTypes.Id
     new_name: AppFieldTypes.AppName | None = None
     new_slug: AppFieldTypes.Slug | None = None
     new_description: AppFieldTypes.Description | None = None

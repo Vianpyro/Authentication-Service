@@ -147,8 +147,7 @@ async def register_pending_user(
 
     # Retrieve the application name from the database
     result = await db.execute(
-        text("SELECT get_application_name(:id)"),
-        {"id": pending_user.app_id},
+        text("SELECT get_application_name(:app_id)"), {"app_id": pending_user.app_id}
     )
     app_name = result.scalar()
 

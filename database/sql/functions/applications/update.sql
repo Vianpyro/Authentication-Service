@@ -1,5 +1,5 @@
 CREATE OR REPLACE FUNCTION update_application(
-    p_id UUID,
+    p_app_id UUID,
     p_new_name TEXT,
     p_new_slug TEXT,
     p_new_description TEXT,
@@ -22,7 +22,7 @@ BEGIN
         description = COALESCE(p_new_description, a.description),
         is_active = p_new_status,
         updated_at = current_timestamp
-    WHERE a.id = p_id
+    WHERE a.id = p_app_id
     RETURNING a.name, a.slug, a.description, a.is_active, a.updated_at::TIMESTAMPTZ;
 END;
 $$ LANGUAGE plpgsql;

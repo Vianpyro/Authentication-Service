@@ -1,5 +1,5 @@
 CREATE OR REPLACE FUNCTION get_application(
-    p_id UUID
+    p_app_id UUID
 )
 RETURNS TABLE (
     id UUID,
@@ -21,7 +21,7 @@ BEGIN
         a.created_at,
         a.updated_at
     FROM applications a
-    WHERE a.id = p_id;
+    WHERE a.id = p_app_id;
 END;
 $$ LANGUAGE plpgsql;
 

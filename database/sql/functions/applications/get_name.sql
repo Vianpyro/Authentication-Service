@@ -1,5 +1,5 @@
 CREATE OR REPLACE FUNCTION get_application_name(
-    p_id UUID
+    p_app_id UUID
 )
 RETURNS TEXT
 AS $$
@@ -8,7 +8,7 @@ DECLARE
 BEGIN
     SELECT name INTO v_name
     FROM applications
-    WHERE id = p_id;
+    WHERE id = p_app_id;
 
     RETURN v_name;
 END;

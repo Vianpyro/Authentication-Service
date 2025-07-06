@@ -1,5 +1,5 @@
 CREATE OR REPLACE FUNCTION delete_application(
-    p_id UUID,
+    p_app_id UUID,
     p_slug TEXT
 )
 RETURNS TEXT
@@ -8,7 +8,7 @@ DECLARE
     v_name TEXT;
 BEGIN
     DELETE FROM applications
-    WHERE id = p_id AND slug = p_slug
+    WHERE id = p_app_id AND slug = p_slug
     RETURNING name INTO v_name;
 
     RETURN v_name;
