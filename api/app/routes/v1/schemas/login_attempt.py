@@ -19,7 +19,7 @@ class LoginAttemptTypes:
 
     AppId = AppFieldTypes.Id
 
-    AttemptedAt = CommonFieldTypes.Timestamp
+    AttemptedAt = CommonFieldTypes.NonFutureTimestamp
 
     EmailEncrypted = CommonFieldTypes.EncryptedField
 

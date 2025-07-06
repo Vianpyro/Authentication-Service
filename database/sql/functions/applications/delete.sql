@@ -15,4 +15,4 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-GRANT EXECUTE ON PROCEDURE delete_application TO api;
+GRANT EXECUTE ON FUNCTION delete_application TO api;

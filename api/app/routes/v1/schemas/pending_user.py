@@ -5,8 +5,13 @@ This module provides Pydantic schemas for validating pending user-related data,
 such as user requests and responses.
 """
 
+from typing import Annotated
+
+from pydantic import BaseModel, Field
+
 from .application import AppFieldTypes
 from .common import CommonFieldTypes
+from .user import UserFieldTypes
 
 
 class PendingUserTypes:
@@ -14,9 +19,9 @@ class PendingUserTypes:
 
     AppId = AppFieldTypes.Id
 
-    CreatedAt = CommonFieldTypes.Timestamp
+    CreatedAt = CommonFieldTypes.NonFutureTimestamp
 
-    ExpiresAt = CommonFieldTypes.Timestamp
+    ExpiresAt = CommonFieldTypes.FutureTimestamp
 
     EmailEncrypted = CommonFieldTypes.EncryptedField
 
@@ -24,8 +29,43 @@ class PendingUserTypes:
 
     Id = CommonFieldTypes.Id
 
-    IpAddress = CommonFieldTypes.IpAddress
-
-    UserAgent = CommonFieldTypes.UserAgent
-
     Token = CommonFieldTypes.Token
+
+
+class PendingUserCreate(BaseModel):
+    """Schema for creating a pending user."""
+
+    app_id: AppFieldTypes.Id
+
+    confirmation_url: Annotated[
+        str,
+        Field(
+            title="Confirmation URL",
+            description="The URL to confirm the pending user registration.",
+        ),
+    ]
+
+    email: Annotated[
+        str,
+        Field(
+            title="Email",
+            description="The email address of the pending user.",
+            example="user@example.com",
+        ),
+    ]
+
+
+class PendingUserConfirmation(BaseModel):
+    """Schema for confirming a pending user registration."""
+
+    app_id: PendingUserTypes.AppId
+
+    token: PendingUserTypes.Token
+
+    password: UserFieldTypes.Password
+
+
+class PendingUserConfirmationResponse(BaseModel):
+    """Response schema for confirming a pending user registration."""
+
+    user_id: UserFieldTypes.Id

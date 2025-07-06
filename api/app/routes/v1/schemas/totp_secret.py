@@ -18,7 +18,7 @@ class TOTPSecretTypes:
 
     Id = CommonFieldTypes.UUID
 
-    CreatedAt = CommonFieldTypes.Timestamp
+    CreatedAt = CommonFieldTypes.NonFutureTimestamp
 
     KeyVersion = Annotated[
         int,

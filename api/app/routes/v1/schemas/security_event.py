@@ -44,6 +44,6 @@ class SecurityEventTypes:
         ),
     ]
 
-    OccurredAt = CommonFieldTypes.Timestamp
+    OccurredAt = CommonFieldTypes.NonFutureTimestamp
 
     UserId = UserFieldTypes.Id

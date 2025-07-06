@@ -48,10 +48,10 @@ class EmailFieldTypes:
         str,
         Field(
             title="Email Template Path",
-            pattern=r"^templates/[a-zA-Z0-9_-]+\.html$",
+            pattern=r"^[a-z0-9_]+\.html$",
             min_length=1,
             description="The file path to the email template.",
-            example="templates/welcome_email.html",
+            example="welcome_email.html",
         ),
     ]
 
@@ -68,7 +68,8 @@ class BaseEmailSchema(BaseModel):
 class RegistrationEmailSchema(BaseEmailSchema):
     """Schema for registration emails."""
 
-    subject: EmailFieldTypes.Subject = Field(default="{app_name} - Email Confirmation")
-    template_path: EmailFieldTypes.TemplatePath = Field(
-        default="templates/registration_email.html"
-    )
+    subject: EmailFieldTypes.Subject = Annotated[
+        str, Field(default="Authentication Service - Email Confirmation")
+    ]
+
+    template_path: EmailFieldTypes.TemplatePath
