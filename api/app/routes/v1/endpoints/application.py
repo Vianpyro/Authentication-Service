@@ -42,12 +42,12 @@ router = APIRouter()
 
 
 @router.get(
-    "/{app_id}",
+    "/{id}",
     status_code=status.HTTP_200_OK,
     response_model=AppGetResponse,
     response_description="Application details retrieved successfully",
 )
-async def get_applications(app_id: UUID, db: AsyncSession = Depends(get_db)):
+async def get_applications(id: UUID, db: AsyncSession = Depends(get_db)):
     """
     Retrieve application details by application ID.
 
@@ -55,7 +55,7 @@ async def get_applications(app_id: UUID, db: AsyncSession = Depends(get_db)):
     metadata, status, and timestamps for a specific application ID.
 
     Args:
-        app_id: Application ID from URL path parameter
+        id: Application ID from URL path parameter
         db: Database session dependency
 
     Returns:
@@ -72,25 +72,17 @@ async def get_applications(app_id: UUID, db: AsyncSession = Depends(get_db)):
             - 404 Not Found: Application with specified ID does not exist
     """
     result = await db.execute(
-        text("SELECT * FROM applications WHERE id = :p_app_id"),
-        {"p_app_id": app_id},
+        text("SELECT * FROM get_application(p_id => :id)"), {"id": id}
     )
 
-    app_details = result.fetchone()
-    if app_details is None:
+    data = result.fetchone()
+    if data is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Application not found",
         )
 
-    return AppGetResponse(
-        name=app_details.app_name,
-        slug=app_details.slug,
-        description=app_details.app_description,
-        is_active=app_details.is_active,
-        created_at=app_details.created_at,
-        updated_at=app_details.updated_at,
-    )
+    return AppGetResponse.model_validate(data)
 
 
 @router.post(
@@ -128,12 +120,12 @@ async def register_application(
     """
     result = await db.execute(
         text(
-            "SELECT register_application(:p_app_name, :p_app_slug, :p_app_description)"
+            "SELECT register_application(p_name => :name, p_slug => :slug, p_description => :description)"
         ),
         {
-            "p_app_name": application.name,
-            "p_app_slug": application.slug,
-            "p_app_description": application.description,
+            "name": application.name,
+            "slug": application.slug,
+            "description": application.description,
         },
     )
     app_id = result.scalar()
@@ -214,9 +206,9 @@ async def update_application(
     await db.commit()
 
     return AppUpdateResponse(
-        name=app_details.app_name,
+        name=app_details.name,
         slug=app_details.slug,
-        description=app_details.app_description,
+        description=app_details.description,
         is_active=app_details.is_active,
         updated_at=app_details.updated_at,
     )
@@ -259,16 +251,16 @@ async def delete_application(
         accounts, tokens, and other application-related data.
     """
     result = await db.execute(
-        text("SELECT delete_application(p_app_id => :app_id, p_app_slug => :app_slug)"),
-        {"app_id": application.id, "app_slug": application.slug},
+        text("SELECT delete_application(p_id => :id, p_slug => :slug)"),
+        {"id": application.id, "slug": application.slug},
     )
 
-    app_name = result.scalar()
-    if app_name is None:
+    name = result.scalar()
+    if name is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Application not found or ID/slug mismatch",
         )
     await db.commit()
 
-    return AppDeleteResponse(name=app_name)
+    return AppDeleteResponse(name=name)

@@ -1,16 +1,16 @@
 CREATE OR REPLACE FUNCTION get_application_name(
-    p_app_id UUID
+    p_id UUID
 )
 RETURNS TEXT
 AS $$
 DECLARE
-    v_app_name TEXT;
+    v_name TEXT;
 BEGIN
-    SELECT app_name INTO v_app_name
+    SELECT name INTO v_name
     FROM applications
-    WHERE id = p_app_id;
+    WHERE id = p_id;
 
-    RETURN v_app_name;
+    RETURN v_name;
 END;
 $$ LANGUAGE plpgsql;
 

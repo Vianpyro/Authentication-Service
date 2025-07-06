@@ -1,18 +1,18 @@
 CREATE OR REPLACE FUNCTION register_application(
-    p_app_name TEXT,
-    p_app_slug TEXT,
-    p_app_description TEXT DEFAULT NULL
+    p_name TEXT,
+    p_slug TEXT,
+    p_description TEXT DEFAULT NULL
 )
 RETURNS UUID
 AS $$
 DECLARE
-    v_app_id UUID;
+    v_id UUID;
 BEGIN
-    INSERT INTO applications (slug, app_name, app_description)
-    VALUES (p_app_slug, p_app_name, p_app_description)
-    RETURNING id INTO v_app_id;
+    INSERT INTO applications (slug, name, description)
+    VALUES (p_slug, p_name, p_description)
+    RETURNING id INTO v_id;
 
-    RETURN v_app_id;
+    RETURN v_id;
 END;
 $$ LANGUAGE plpgsql;
 

@@ -25,8 +25,8 @@ CREATE TYPE api_permission AS ENUM ('read_users', 'write_users', 'admin', 'analy
 CREATE TABLE applications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     slug TEXT NOT NULL UNIQUE CHECK (slug ~ '^[a-z0-9_-]{3,50}$'),
-    app_name TEXT NOT NULL CHECK (char_length(app_name) >= 3 AND char_length(app_name) <= 100),
-    app_description TEXT CHECK (char_length(app_description) <= 500),
+    name TEXT NOT NULL CHECK (char_length(name) >= 3 AND char_length(name) <= 100),
+    description TEXT CHECK (char_length(description) <= 500),
     api_rate_limit INTEGER DEFAULT 1000 CHECK (api_rate_limit > 0),
     created_at NON_FUTURE_TIMESTAMPTZ NOT NULL DEFAULT current_timestamp,
     updated_at NON_FUTURE_TIMESTAMPTZ,
@@ -122,7 +122,7 @@ CREATE TABLE device_fingerprints (
     app_id UUID NOT NULL REFERENCES applications (id) ON DELETE CASCADE,
 
     fingerprint_hash SHA_256_HASH NOT NULL,
-    device_name TEXT NOT NULL CHECK (device_name <> '' AND char_length(device_name) <= 100),
+    name TEXT NOT NULL CHECK (name <> '' AND char_length(name) <= 100),
     user_agent USER_AGENT_STR,
     last_seen_at NON_FUTURE_TIMESTAMPTZ NOT NULL DEFAULT current_timestamp,
 
@@ -231,7 +231,7 @@ CREATE TABLE api_keys (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     app_id UUID NOT NULL REFERENCES applications (id) ON DELETE CASCADE,
 
-    key_name TEXT NOT NULL CHECK (char_length(key_name) >= 3 AND char_length(key_name) <= 100),
+    name TEXT NOT NULL CHECK (char_length(name) >= 3 AND char_length(name) <= 100),
     key_hash SHA_256_HASH NOT NULL UNIQUE,
     key_prefix TEXT NOT NULL CHECK (key_prefix ~ '^ak_[a-z0-9]{8}$'),
 
@@ -243,7 +243,7 @@ CREATE TABLE api_keys (
 
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
 
-    CONSTRAINT unique_key_name_per_app UNIQUE (app_id, key_name)
+    CONSTRAINT unique_name_per_app UNIQUE (app_id, name)
 );
 
 -- Indexes for performance

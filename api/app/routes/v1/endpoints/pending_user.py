@@ -100,22 +100,22 @@ async def register_pending_user(
             text(
                 """
                 SELECT register_pending_user(
-                    :p_app_id,
-                    :p_token,
-                    :p_email_encrypted,
-                    :p_email_hash,
-                    :p_ip_address,
-                    :p_user_agent
+                    p_app_id => :app_id,
+                    p_token => :token,
+                    p_email_encrypted => :email_encrypted,
+                    p_email_hash => :email_hash,
+                    p_ip_address => :ip_address,
+                    p_user_agent => :user_agent
                 )
                 """
             ),
             {
-                "p_app_id": pending_user.app_id,
-                "p_token": verification_token,
-                "p_email_encrypted": encrypt_email(pending_user.email),
-                "p_email_hash": hash_email(pending_user.email),
-                "p_ip_address": request.client.host if request.client else None,
-                "p_user_agent": request.headers.get("user-agent", ""),
+                "app_id": pending_user.app_id,
+                "token": verification_token,
+                "email_encrypted": encrypt_email(pending_user.email),
+                "email_hash": hash_email(pending_user.email),
+                "ip_address": request.client.host if request.client else None,
+                "user_agent": request.headers.get("user-agent", ""),
             },
         )
         expires_at = result.scalar()
@@ -147,8 +147,8 @@ async def register_pending_user(
 
     # Retrieve the application name from the database
     result = await db.execute(
-        text("SELECT app_name FROM applications WHERE id = :app_id"),
-        {"app_id": pending_user.app_id},
+        text("SELECT get_application_name(:id)"),
+        {"id": pending_user.app_id},
     )
     app_name = result.scalar()
 

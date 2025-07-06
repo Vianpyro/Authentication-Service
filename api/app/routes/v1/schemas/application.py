@@ -111,6 +111,9 @@ class AppGetResponse(BaseModel):
     created_at: AppFieldTypes.CreatedAt
     updated_at: CommonFieldTypes.NonFutureTimestamp | None = None
 
+    class Config:
+        from_attributes = True
+
 
 class AppUpdate(BaseModel):
     """Schema for updating application details."""
@@ -130,3 +133,6 @@ class AppUpdateResponse(BaseModel):
     description: AppFieldTypes.Description
     is_active: AppFieldTypes.IsActive
     updated_at: AppFieldTypes.UpdatedAt
+
+    class Config:
+        from_attributes = True
