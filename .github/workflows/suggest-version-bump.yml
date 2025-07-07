@@ -1,5 +1,5 @@
 ---
-# This workflow suggests the next version bump for changed API folders and database based on PR labels and the latest tag.
+# This workflow suggests the next version bump for the service and API versions based on PR labels and changes.
 
 name: Suggest Version Bump
 
@@ -13,166 +13,159 @@ on:
     branches:
       - main
     paths:
-      - 'database/**/*.sql'
+      - 'database/sql/**/*.sql'
+      - 'api/app/**/*.py'
   workflow_call:
     outputs:
-      api_next_version:
-        description: 'Suggested next API version'
-        value: ${{ jobs.analyze.outputs.api_next_version }}
-      api_bump_type:
-        description: 'API version bump type'
-        value: ${{ jobs.analyze.outputs.api_bump_type }}
-      api_latest_tag:
-        description: 'Latest API tag'
-        value: ${{ jobs.analyze.outputs.api_latest_tag }}
-      database_next_version:
-        description: 'Suggested next database version'
-        value: ${{ jobs.analyze.outputs.database_next_version }}
-      database_bump_type:
-        description: 'Database version bump type'
-        value: ${{ jobs.analyze.outputs.database_bump_type }}
-      database_latest_tag:
-        description: 'Latest database tag'
-        value: ${{ jobs.analyze.outputs.database_latest_tag }}
+      service_next_version:
+        description: 'Suggested next service version'
+        value: ${{ jobs.analyze.outputs.service_next_version }}
+      service_bump_type:
+        description: 'Service version bump type'
+        value: ${{ jobs.analyze.outputs.service_bump_type }}
+      service_current_version:
+        description: 'Current service version'
+        value: ${{ jobs.analyze.outputs.service_current_version }}
+      api_versions_bumps:
+        description: 'API versions bump suggestions'
+        value: ${{ jobs.analyze.outputs.api_versions_bumps }}
 
 jobs:
-  suggest:
-    uses: ./.github/workflows/detect-changed-versions.yml
-
   labels:
     uses: ./.github/workflows/get-pr-labels.yml
+
+  detect-changes:
+    uses: ./.github/workflows/detect-changed-versions.yml
 
   analyze:
     name: Analyze Changes
     needs:
-      - suggest
       - labels
+      - detect-changes
     runs-on: ubuntu-latest
     outputs:
-      api_bump_type: ${{ steps.process.outputs.api_bump }}
-      api_latest_tag: ${{ steps.process.outputs.api_latest_tag }}
-      api_next_version: ${{ steps.process.outputs.api_next_version }}
-      database_bump_type: ${{ steps.process.outputs.database_bump }}
-      database_latest_tag: ${{ steps.process.outputs.database_latest_tag }}
-      database_next_version: ${{ steps.process.outputs.database_next_version }}
+      service_bump_type: ${{ steps.process.outputs.service_bump }}
+      service_current_version: ${{ steps.process.outputs.service_current_version }}
+      service_next_version: ${{ steps.process.outputs.service_next_version }}
+      api_versions_bumps: ${{ steps.process.outputs.api_versions_bumps }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Process all component versions
+      - name: Process version bumps
         id: process
         run: |
-          # Function to get latest tag for a component
-          get_latest_tag() {
-            local prefix="$1"
-            git tag --list "${prefix}*" --sort=-v:refname | head -n1
+          # Function to get changed files
+          get_changed_files() {
+            git fetch origin main
+            BASE_SHA=$(git merge-base HEAD origin/main)
+            git diff --name-only "$BASE_SHA"...HEAD
           }
 
-          # Function to get version from tag
-          parse_version_from_tag() {
-            local tag="$1"
-            local prefix="$2"
-            echo "$tag" | sed -E "s/^${prefix}([0-9]+\.[0-9]+\.[0-9]+).*/\1/"
+          # Function to determine bump type from labels
+          determine_bump_type() {
+            local labels="$1"
+            local bump="patch"
+
+            echo "$labels" | grep -q 'type: feature' && bump="minor"
+            echo "$labels" | grep -q 'type: security' && bump="minor"
+            echo "$labels" | grep -q 'special: breaking change' && bump="major"
+
+            echo "$bump"
           }
 
-          # Function to get database version from GitHub packages
-          get_database_version_from_packages() {
-            local repo_name
-            local image_name
-            local version
+          # Function to bump version
+          bump_version() {
+            local version="$1"
+            local bump_type="$2"
 
-            repo_name=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-            image_name="ghcr.io/$(echo "$repo_name" | cut -d'/' -f1)/$(echo "$repo_name" | cut -d'/' -f2)-database"
+            IFS='.' read -r major minor patch <<< "$version"
 
-            # Log in to GitHub Container Registry
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin > /dev/null 2>&1
-
-            # Pull latest container image
-            if docker pull "$image_name:latest" > /dev/null 2>&1; then
-              # Extract version from tags using docker inspect
-              version=$(docker inspect "$image_name:latest" --format='{{json .RepoTags}}' 2>/dev/null | \
-                jq -r '.[]' 2>/dev/null | \
-                grep -E '^.*:[0-9]+\.[0-9]+\.[0-9]+$' | \
-                sed -E 's/^.*:([0-9]+\.[0-9]+\.[0-9]+)$/\1/' | \
-                head -n1)
-
-              if [ -n "$version" ]; then
-                echo "$version"
-              else
-                echo ""
-              fi
-            else
-              echo ""
-            fi
-          }
-
-          # Function to process version bump for a component
-          process_version() {
-            local component="$1"
-            local prefix="$2"
-
-            LABELS="${{ needs.labels.outputs.labels }}"
-            BUMP="patch"
-            echo "$LABELS" | grep -q 'type: feature' && BUMP="minor"
-            echo "$LABELS" | grep -q 'type: security' && BUMP="minor"
-            echo "$LABELS" | grep -q 'special: breaking change' && BUMP="major"
-
-            if [ "$component" = "api" ]; then
-              # Read version from api/version.py
-              if [ -f "api/version.py" ]; then
-                VERSION=$(grep -E "^__version__\s*=" api/version.py | sed -E "s/^__version__\s*=\s*['\"]([^'\"]+)['\"].*$/\1/")
-                if [ -n "$VERSION" ]; then
-                  TAG="${prefix}${VERSION}"
-                else
-                  echo "Warning: Could not parse version from api/version.py, falling back to tag-based approach"
-                  TAG=$(get_latest_tag "$prefix")
-                  [ -z "$TAG" ] && TAG="${prefix}0.0.0"
-                  VERSION=$(parse_version_from_tag "$TAG" "$prefix")
-                fi
-              else
-                echo "Warning: api/version.py not found, falling back to tag-based approach"
-                TAG=$(get_latest_tag "$prefix")
-                [ -z "$TAG" ] && TAG="${prefix}0.0.0"
-                VERSION=$(parse_version_from_tag "$TAG" "$prefix")
-              fi
-            elif [ "$component" = "database" ]; then
-              # Try to get database version from GitHub packages
-              PACKAGE_VERSION=$(get_database_version_from_packages)
-              if [ -n "$PACKAGE_VERSION" ]; then
-                VERSION="$PACKAGE_VERSION"
-                TAG="${prefix}${VERSION}"
-                echo "Found database version from packages: $VERSION"
-              else
-                echo "Could not fetch database version from packages, falling back to tag-based approach"
-                TAG=$(get_latest_tag "$prefix")
-                [ -z "$TAG" ] && TAG="${prefix}0.0.0"
-                VERSION=$(parse_version_from_tag "$TAG" "$prefix")
-              fi
-            fi
-
-            PRERELEASE=$(echo "$TAG" | sed -nE "s/^${prefix}[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$/\1/p")
-            IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
-
-            case "$BUMP" in
-              major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
-              minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
-              patch) PATCH=$((PATCH + 1)) ;;
+            case "$bump_type" in
+              major) major=$((major + 1)); minor=0; patch=0 ;;
+              minor) minor=$((minor + 1)); patch=0 ;;
+              patch) patch=$((patch + 1)) ;;
             esac
 
-            NEXT_VERSION="${prefix}${MAJOR}.${MINOR}.${PATCH}${PRERELEASE}"
-
-            {
-              echo "${component}_bump=$BUMP"
-              echo "${component}_latest_tag=$TAG"
-              echo "${component}_next_version=$NEXT_VERSION"
-            } >> "$GITHUB_OUTPUT"
+            echo "${major}.${minor}.${patch}"
           }
 
-          # Process both components
-          process_version "api" "api-v"
-          process_version "database" "database-v"
+          # Get current service version from api/app/version.py
+          if [ -f "api/app/version.py" ]; then
+            SERVICE_VERSION=$(grep -E "^__version__\s*=" api/app/version.py | sed -E "s/^__version__\s*=\s*['\"]([^'\"]+)['\"].*$/\1/")
+            if [ -z "$SERVICE_VERSION" ]; then
+              echo "Warning: Could not parse version from api/app/version.py, using 0.0.0"
+              SERVICE_VERSION="0.0.0"
+            fi
+          else
+            echo "Warning: api/app/version.py not found, using 0.0.0"
+            SERVICE_VERSION="0.0.0"
+          fi
+
+          # Get labels and determine bump type
+          LABELS="${{ needs.labels.outputs.labels }}"
+          BUMP_TYPE=$(determine_bump_type "$LABELS")
+
+          # Check if changes require service version bump
+          CHANGED_FILES=$(get_changed_files)
+          SERVICE_NEEDS_BUMP=false
+
+          if echo "$CHANGED_FILES" | grep -E '\.(sql|py)$' > /dev/null; then
+            SERVICE_NEEDS_BUMP=true
+          fi
+
+          # Calculate next service version
+          if [ "$SERVICE_NEEDS_BUMP" = true ]; then
+            SERVICE_NEXT_VERSION=$(bump_version "$SERVICE_VERSION" "$BUMP_TYPE")
+          else
+            SERVICE_NEXT_VERSION="$SERVICE_VERSION"
+          fi
+
+          # Process API version changes using the detected changes from the reusable workflow
+          API_VERSIONS_BUMPS=""
+          CHANGED_API_VERSIONS="${{ needs.detect-changes.outputs.versions }}"
+
+          if [ -n "$CHANGED_API_VERSIONS" ]; then
+            for version_dir in $CHANGED_API_VERSIONS; do
+              # Get current version from __init__.py
+              if [ -f "api/app/routes/$version_dir/__init__.py" ]; then
+                CURRENT_API_VERSION=$(grep -E "^__version__\s*=" "api/app/routes/$version_dir/__init__.py" | sed -E "s/^__version__\s*=\s*['\"]([^'\"]+)['\"].*$/\1/")
+                if [ -z "$CURRENT_API_VERSION" ]; then
+                  echo "Warning: Could not parse version from api/app/routes/$version_dir/__init__.py, using 1.0.0"
+                  CURRENT_API_VERSION="1.0.0"
+                fi
+              else
+                echo "Warning: api/app/routes/$version_dir/__init__.py not found, using 1.0.0"
+                CURRENT_API_VERSION="1.0.0"
+              fi
+
+              # Calculate next API version
+              NEXT_API_VERSION=$(bump_version "$CURRENT_API_VERSION" "$BUMP_TYPE")
+
+              # Add to bumps list
+              if [ -n "$API_VERSIONS_BUMPS" ]; then
+                API_VERSIONS_BUMPS="$API_VERSIONS_BUMPS,$version_dir:$CURRENT_API_VERSION->$NEXT_API_VERSION($BUMP_TYPE)"
+              else
+                API_VERSIONS_BUMPS="$version_dir:$CURRENT_API_VERSION->$NEXT_API_VERSION($BUMP_TYPE)"
+              fi
+            done
+          fi
+
+          # Output results
+          {
+            echo "service_bump=$BUMP_TYPE"
+            echo "service_current_version=$SERVICE_VERSION"
+            echo "service_next_version=$SERVICE_NEXT_VERSION"
+            echo "api_versions_bumps=$API_VERSIONS_BUMPS"
+          } >> "$GITHUB_OUTPUT"
+
+          # Debug output
+          echo "Service version: $SERVICE_VERSION -> $SERVICE_NEXT_VERSION ($BUMP_TYPE)"
+          if [ -n "$API_VERSIONS_BUMPS" ]; then
+            echo "API versions: $API_VERSIONS_BUMPS"
+          fi
 
   report:
     name: Report Summary
@@ -183,8 +176,26 @@ jobs:
         run: |
           {
             echo "## 🚀 Suggested Version Bumps"
-            echo "| Component | Bump Type | Latest Tag | Next Version |"
-            echo "|-----------|-----------|------------|--------------|"
-            echo "| API | ${{ needs.analyze.outputs.api_bump_type }} | \`${{ needs.analyze.outputs.api_latest_tag }}\` | \`${{ needs.analyze.outputs.api_next_version }}\` |"
-            echo "| Database | ${{ needs.analyze.outputs.database_bump_type }} | \`${{ needs.analyze.outputs.database_latest_tag }}\` | \`${{ needs.analyze.outputs.database_next_version }}\` |"
+            echo ""
+            echo "### Service Version"
+            echo "| Component | Bump Type | Current Version | Next Version |"
+            echo "|-----------|-----------|-----------------|--------------|"
+            echo "| Service | ${{ needs.analyze.outputs.service_bump_type }} | \`${{ needs.analyze.outputs.service_current_version }}\` | \`${{ needs.analyze.outputs.service_next_version }}\` |"
+
+            API_VERSIONS_BUMPS="${{ needs.analyze.outputs.api_versions_bumps }}"
+            if [ -n "$API_VERSIONS_BUMPS" ]; then
+              echo ""
+              echo "### API Versions"
+              echo "| API Version | Current | Next | Bump Type |"
+              echo "|-------------|---------|------|-----------|"
+
+              IFS=',' read -ra BUMPS <<< "$API_VERSIONS_BUMPS"
+              for bump in "${BUMPS[@]}"; do
+                IFS=':' read -r version_dir version_info <<< "$bump"
+                IFS='(' read -r version_change bump_type <<< "$version_info"
+                bump_type=$(echo "$bump_type" | sed 's/)//')
+                IFS='->' read -r current_ver next_ver <<< "$version_change"
+                echo "| $version_dir | \`$current_ver\` | \`$next_ver\` | $bump_type |"
+              done
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
