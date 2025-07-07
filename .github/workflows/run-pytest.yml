@@ -56,10 +56,10 @@ jobs:
       - name: Run Pytest
         working-directory: api
         env:
-          MAIL_USERNAME: "github@actions.com"
-          MAIL_PASSWORD: "PassW0rd2PassTests"
-          MAIL_SERVER: "smtp.unittest.com"
-          AES_SECRET_KEY: "1234567890abcdef1234567890abcdef"
-          PASSWORD_PEPPER: "PASSWORD_PEPPER"
-          TOKEN_PEPPER: "TOKEN_PEPPER"
+          MAIL_USERNAME: "fake@username.com"
+          MAIL_PASSWORD: "fake-password"
+          MAIL_SERVER: "smtp.fake-domain.com"
+          AES_SECRET_KEY: "00000000000000000000000000000000"
+          PASSWORD_PEPPER: "not-a-real-password-pepper"
+          TOKEN_PEPPER: "not-a-real-token-pepper"
         run: python -m pytest --doctest-modules --junitxml=junit/test-results.xml --cov=app --cov-report=xml --cov-report=html
