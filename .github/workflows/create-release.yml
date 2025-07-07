@@ -29,7 +29,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ needs.suggest-bump.outputs.api_next_version }}
-          release_name: ${{ needs.suggest-bump.outputs.api_next_version }}
+          tag_name: ${{ needs.suggest-bump.outputs.service_next_version }}
+          release_name: ${{ needs.suggest-bump.outputs.service_next_version }}
           draft: false
           prerelease: false
