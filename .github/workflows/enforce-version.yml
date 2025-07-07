@@ -30,9 +30,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Ensure readable file permissions
-        run: chmod -R a+r .
-
       - name: Set changed versions as environment variable
         run: echo "VERSIONS=${{ needs.detect-changes.outputs.versions }}" >> "$GITHUB_ENV"
 
