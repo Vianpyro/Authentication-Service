@@ -1,14 +1,13 @@
 import re
 
 import pytest
-
-from app.utility.security import create_verification_token
+from app.utility.security import create_token
 
 
 @pytest.fixture
 def verification_token():
     """Fixture to provide a verification token for testing."""
-    return create_verification_token()
+    return create_token()
 
 
 def test_create_verification_token_type(verification_token):
