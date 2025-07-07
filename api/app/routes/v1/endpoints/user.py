@@ -38,6 +38,28 @@ async def create_and_return_session(user_id: int, db: AsyncSession, app_id: int,
     session_token = create_token()
     refresh_token = create_token()
 
+    await db.execute(
+        text(
+            """
+            SELECT create_session (
+                p_app_id => :app_id,
+                p_user_id => :user_id,
+                p_session_token => :session_token,
+                p_refresh_token => :refresh_token,
+                p_ip_address => :ip_address,
+                p_user_agent => :user_agent
+            )"""
+        ),
+        {
+            "app_id": app_id,
+            "user_id": user_id,
+            "session_token": session_token,
+            "refresh_token": refresh_token,
+            "ip_address": request.client.host if request.client else None,
+            "user_agent": request.headers.get("user-agent", ""),
+        },
+    )
+
     return session_token, refresh_token
 
 

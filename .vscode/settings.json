@@ -45,6 +45,6 @@
         "Run all tests": ["api/app/**/*.py", "!tests/**"]
     },
     "[sql]": {
-        "editor.defaultFormatter": "mtxr.sqltools-driver-pg"
+        "editor.defaultFormatter": "mtxr.sqltools"
     }
 }
