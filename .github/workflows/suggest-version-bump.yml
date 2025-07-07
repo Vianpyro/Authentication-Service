@@ -57,12 +57,8 @@ jobs:
       - name: Process version bumps
         id: process
         run: |
-          # Function to get changed files
-          get_changed_files() {
-            git fetch origin main
-            BASE_SHA=$(git merge-base HEAD origin/main)
-            git diff --name-only "$BASE_SHA"...HEAD
-          }
+          git fetch origin main
+          BASE_SHA=$(git merge-base HEAD origin/main)
 
           # Function to determine bump type from labels
           determine_bump_type() {
@@ -92,15 +88,26 @@ jobs:
             echo "${major}.${minor}.${patch}"
           }
 
-          # Get current service version from api/app/version.py
-          if [ -f "api/app/version.py" ]; then
-            SERVICE_VERSION=$(grep -E "^__version__\s*=" api/app/version.py | sed -E "s/^__version__\s*=\s*['\"]([^'\"]+)['\"].*$/\1/")
-            if [ -z "$SERVICE_VERSION" ]; then
-              echo "Warning: Could not parse version from api/app/version.py, using 0.0.0"
-              SERVICE_VERSION="0.0.0"
+          # Function to get version from current branch
+          get_current_version() {
+            local file="$1"
+            if [ -f "$file" ]; then
+              grep "^__version__" "$file" | cut -d'"' -f2 | cut -d"'" -f2
+            else
+              echo ""
             fi
-          else
-            echo "Warning: api/app/version.py not found, using 0.0.0"
+          }
+
+          # Function to get version from target branch (main)
+          get_version_from_target() {
+            local file="$1"
+            git show "$BASE_SHA:$file" 2>/dev/null | grep "^__version__" | cut -d'"' -f2 | cut -d"'" -f2 || echo ""
+          }
+
+          # Get current service version from target branch (main)
+          SERVICE_VERSION=$(get_version_from_target "api/app/version.py")
+          if [ -z "$SERVICE_VERSION" ]; then
+            echo "Warning: Could not parse version from api/app/version.py in target branch, using 0.0.0"
             SERVICE_VERSION="0.0.0"
           fi
 
@@ -108,20 +115,8 @@ jobs:
           LABELS="${{ needs.labels.outputs.labels }}"
           BUMP_TYPE=$(determine_bump_type "$LABELS")
 
-          # Check if changes require service version bump
-          CHANGED_FILES=$(get_changed_files)
-          SERVICE_NEEDS_BUMP=false
-
-          if echo "$CHANGED_FILES" | grep -E '\.(sql|py)$' > /dev/null; then
-            SERVICE_NEEDS_BUMP=true
-          fi
-
-          # Calculate next service version
-          if [ "$SERVICE_NEEDS_BUMP" = true ]; then
-            SERVICE_NEXT_VERSION=$(bump_version "$SERVICE_VERSION" "$BUMP_TYPE")
-          else
-            SERVICE_NEXT_VERSION="$SERVICE_VERSION"
-          fi
+          # Calculate suggested next service version
+          SERVICE_NEXT_VERSION=$(bump_version "$SERVICE_VERSION" "$BUMP_TYPE")
 
           # Process API version changes using the detected changes from the reusable workflow
           API_VERSIONS_BUMPS=""
@@ -129,15 +124,10 @@ jobs:
 
           if [ -n "$CHANGED_API_VERSIONS" ]; then
             for version_dir in $CHANGED_API_VERSIONS; do
-              # Get current version from __init__.py
-              if [ -f "api/app/routes/$version_dir/__init__.py" ]; then
-                CURRENT_API_VERSION=$(grep -E "^__version__\s*=" "api/app/routes/$version_dir/__init__.py" | sed -E "s/^__version__\s*=\s*['\"]([^'\"]+)['\"].*$/\1/")
-                if [ -z "$CURRENT_API_VERSION" ]; then
-                  echo "Warning: Could not parse version from api/app/routes/$version_dir/__init__.py, using 1.0.0"
-                  CURRENT_API_VERSION="1.0.0"
-                fi
-              else
-                echo "Warning: api/app/routes/$version_dir/__init__.py not found, using 1.0.0"
+              # Get current version from target branch (main)
+              CURRENT_API_VERSION=$(get_version_from_target "api/app/routes/$version_dir/__init__.py")
+              if [ -z "$CURRENT_API_VERSION" ]; then
+                echo "Warning: Could not parse version from api/app/routes/$version_dir/__init__.py in target branch, using 1.0.0"
                 CURRENT_API_VERSION="1.0.0"
               fi
 
