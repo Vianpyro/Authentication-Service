@@ -60,6 +60,9 @@ jobs:
           MAIL_USERNAME: "github@actions.com"
           MAIL_PASSWORD: "PassW0rd2PassTests"
           MAIL_SERVER: "smtp.unittest.com"
+          AES_SECRET_KEY: "1234567890abcdef"
+          PASSWORD_PEPPER: "PASSWORD_PEPPER"
+          TOKEN_PEPPER: "TOKEN_PEPPER"
         run: python -m pytest --doctest-modules --junitxml=junit/test-results.xml --cov=app --cov-report=xml --cov-report=html
 
       - name: Run Pytest (Windows)
