@@ -1,3 +1,4 @@
+---
 name: Enforce Correct Version Update
 
 permissions:
@@ -21,6 +22,7 @@ jobs:
     uses: ./.github/workflows/suggest-version-bump.yml
 
   enforce-version:
+    name: Enforce Version Update
     needs: detect-changes
     runs-on: ubuntu-latest
 
