@@ -67,9 +67,10 @@ CREATE POLICY policy_tenant_isolation ON users USING (app_id = current_setting('
 -- Unified Token Management Table
 CREATE TABLE tokens (
     id SERIAL PRIMARY KEY,
-    token_hash sha_256_hash NOT NULL UNIQUE,
-    token_type token_type NOT NULL,
-    session_type session_token_type, -- only used if token_type = 'session'
+    token_hash SHA_256_HASH NOT NULL UNIQUE,
+    token_type TOKEN_TYPE NOT NULL,
+    session_type SESSION_TOKEN_TYPE, -- only used if token_type = 'session'
+    metadata JSONB DEFAULT '{}'::JSONB,
 
     user_id UUID REFERENCES users (id) ON DELETE CASCADE,
     app_id UUID REFERENCES applications (id) ON DELETE CASCADE,
@@ -82,12 +83,12 @@ CREATE TABLE tokens (
     -- Ensure encrypted email is only present for recovery email verification tokens
     CONSTRAINT chk_email_if_needed CHECK (
         (token_type = 'recovery_email_verification' AND email_encrypted IS NOT NULL)
-        OR (token_type != 'recovery_email_verification' AND email_encrypted IS NULL)
+        OR (token_type <> 'recovery_email_verification' AND email_encrypted IS NULL)
     ),
     -- Ensure session_type is only set for session tokens
     CONSTRAINT chk_session_type_only_when_session CHECK (
         (token_type = 'session' AND session_type IS NOT NULL)
-        OR (token_type != 'session' AND session_type IS NULL)
+        OR (token_type <> 'session' AND session_type IS NULL)
     )
 );
 
@@ -115,16 +116,14 @@ CREATE POLICY policy_tenant_isolation ON pending_users USING (app_id = current_s
 CREATE TABLE sessions (
     id SERIAL PRIMARY KEY,
 
-    app_id UUID NOT NULL REFERENCES applications(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    token_id INTEGER NOT NULL REFERENCES tokens(id) ON DELETE CASCADE,
+    app_id UUID NOT NULL REFERENCES applications (id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    token_id INTEGER NOT NULL REFERENCES tokens (id) ON DELETE CASCADE,
 
     ip_address INET CHECK (ip_address IS NULL OR family(ip_address) IN (4, 6)),
-    user_agent user_agent_str,
-    device_fingerprint UUID REFERENCES device_fingerprints(id) ON DELETE SET NULL,
+    user_agent USER_AGENT_STR,
+    device_fingerprint UUID REFERENCES device_fingerprints (id) ON DELETE SET NULL,
 
-    created_at TIMESTAMPTZ NOT NULL DEFAULT current_timestamp,
-    expires_at TIMESTAMPTZ NOT NULL,
     last_activity_at TIMESTAMPTZ NOT NULL DEFAULT current_timestamp,
 
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
@@ -132,8 +131,8 @@ CREATE TABLE sessions (
     -- Ensure referenced token is actually a session token
     CONSTRAINT chk_token_type_is_session CHECK (
         EXISTS (
-            SELECT 1 FROM tokens t
-            WHERE t.id = token_id AND t.token_type = 'session'
+            SELECT 1 FROM tokens AS t
+            WHERE t.id = t.token_id AND t.token_type = 'session'
         )
     )
 );
@@ -149,7 +148,7 @@ CREATE TABLE device_fingerprints (
     app_id UUID NOT NULL REFERENCES applications (id) ON DELETE CASCADE,
 
     fingerprint_hash SHA_256_HASH NOT NULL,
-    name TEXT NOT NULL CHECK (name <> '' AND char_length(name) <= 100),
+    name TEXT NOT NULL DEFAULT 'Unknown Device' CHECK (name <> '' AND char_length(name) <= 100),
     user_agent USER_AGENT_STR,
     last_seen_at NON_FUTURE_TIMESTAMPTZ NOT NULL DEFAULT current_timestamp,
 
@@ -257,6 +256,7 @@ CREATE INDEX idx_sessions_active_expires ON sessions (is_active, expires_at);
 CREATE INDEX idx_fingerprint_user_seen ON device_fingerprints (user_id, last_seen_at DESC);
 CREATE INDEX idx_login_attempts_app_time ON login_attempts (app_id, attempted_at DESC);
 CREATE INDEX idx_login_attempts_user_time ON login_attempts (user_id, attempted_at DESC);
+CREATE INDEX idx_tokens_session_type ON tokens (session_type);
 CREATE INDEX idx_tokens_user_expires ON tokens (user_id, expires_at);
 CREATE INDEX idx_tokens_user_type ON tokens (user_id, token_type);
 CREATE INDEX idx_pending_users_token ON pending_users (token_id, app_id);
