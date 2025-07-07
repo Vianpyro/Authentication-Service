@@ -47,11 +47,20 @@ jobs:
             local file="$1"
             if [ -f "$file" ]; then
               grep -E "^__version__\s*=" "$file" | sed -E "s/^__version__\s*=\s*['\"]([^'\"]+)['\"].*$/\1/"
+            else
+              echo ""
             fi
           }
 
+          # Function to get version from git commit
+          get_version_from_commit() {
+            local commit="$1"
+            local file="$2"
+            git show "$commit:$file" 2>/dev/null | grep -E "^__version__\s*=" | sed -E "s/^__version__\s*=\s*['\"]([^'\"]+)['\"].*$/\1/" || echo ""
+          }
+
           # Check api/app/version.py
-          OLD_SERVICE_VERSION=$(git show "$BASE_SHA:api/app/version.py" 2>/dev/null | grep -E "^__version__\s*=" | sed -E "s/^__version__\s*=\s*['\"]([^'\"]+)['\"].*$/\1/" || echo "")
+          OLD_SERVICE_VERSION=$(get_version_from_commit "$BASE_SHA" "api/app/version.py")
           NEW_SERVICE_VERSION=$(get_version "api/app/version.py")
 
           if [ "$OLD_SERVICE_VERSION" = "$NEW_SERVICE_VERSION" ]; then
@@ -63,7 +72,7 @@ jobs:
 
           # Check each changed version folder
           for v in $VERSIONS; do
-            OLD_API_VERSION=$(git show "$BASE_SHA:api/app/routes/$v/__init__.py" 2>/dev/null | grep -E "^__version__\s*=" | sed -E "s/^__version__\s*=\s*['\"]([^'\"]+)['\"].*$/\1/" || echo "")
+            OLD_API_VERSION=$(get_version_from_commit "$BASE_SHA" "api/app/routes/$v/__init__.py")
             NEW_API_VERSION=$(get_version "api/app/routes/$v/__init__.py")
 
             if [ "$OLD_API_VERSION" = "$NEW_API_VERSION" ]; then
