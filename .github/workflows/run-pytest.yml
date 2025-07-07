@@ -53,7 +53,7 @@ jobs:
           pip install -r api/requirements-dev.txt
           pip install pytest-cov pytest-env
 
-      - name: Run Pytest (Linux/macOS)
+      - name: Run Pytest
         working-directory: api
         env:
           MAIL_USERNAME: "github@actions.com"
