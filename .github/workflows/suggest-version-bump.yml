@@ -186,16 +186,17 @@ jobs:
             if [ -n "$API_VERSIONS_BUMPS" ]; then
               echo ""
               echo "### API Versions"
-              echo "| API Version | Current | Next | Bump Type |"
-              echo "|-------------|---------|------|-----------|"
+              echo "| API Version | Bump type | Current Version | Next Version |"
+              echo "|-------------|-----------|-----------------|---------------|"
 
               IFS=',' read -ra BUMPS <<< "$API_VERSIONS_BUMPS"
               for bump in "${BUMPS[@]}"; do
                 IFS=':' read -r version_dir version_info <<< "$bump"
                 IFS='(' read -r version_change bump_type <<< "$version_info"
                 bump_type=$(echo "$bump_type" | sed 's/)//')
-                IFS='->' read -r current_ver next_ver <<< "$version_change"
-                echo "| $version_dir | \`$current_ver\` | \`$next_ver\` | $bump_type |"
+                current_ver="${version_change%->*}"
+                next_ver="${version_change#*->}"
+                echo "| $version_dir | $bump_type | \`$current_ver\` | \`$next_ver\` |"
               done
             fi
           } >> "$GITHUB_STEP_SUMMARY"
