@@ -1,5 +1,10 @@
 """
 Security module for hashing, encryption, and token verification.
+
+This module provides functions and constants for handling password hashing,
+field encryption/decryption, OTP verification, and normalization of sensitive
+fields such as email and phone numbers. It is used throughout the application
+to ensure secure handling of user credentials and sensitive data.
 """
 
 import base64

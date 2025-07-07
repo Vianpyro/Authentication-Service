@@ -69,5 +69,4 @@ class RegistrationEmailSchema(BaseEmailSchema):
     """Schema for registration emails."""
 
     subject: EmailFieldTypes.Subject = Annotated[str, Field(default="Authentication Service - Email Confirmation")]
-
     template_path: EmailFieldTypes.TemplatePath
