@@ -42,23 +42,35 @@ jobs:
           EXIT_CODE=0
           REPORT=""
 
+          # Function to extract version from file
+          get_version() {
+            local file="$1"
+            if [ -f "$file" ]; then
+              grep -E "^__version__\s*=" "$file" | sed -E "s/^__version__\s*=\s*['\"]([^'\"]+)['\"].*$/\1/"
+            fi
+          }
+
           # Check api/app/version.py
-          VERSION_PY_CHANGED=$(git diff "$BASE_SHA"...HEAD -- "api/app/version.py" | grep '__version__ = ' || true)
-          if [ -z "$VERSION_PY_CHANGED" ]; then
-            REPORT+="🛑 Python code was changed, but __version__ was not updated in api/app/version.py\n"
+          OLD_SERVICE_VERSION=$(git show "$BASE_SHA:api/app/version.py" 2>/dev/null | grep -E "^__version__\s*=" | sed -E "s/^__version__\s*=\s*['\"]([^'\"]+)['\"].*$/\1/" || echo "")
+          NEW_SERVICE_VERSION=$(get_version "api/app/version.py")
+
+          if [ "$OLD_SERVICE_VERSION" = "$NEW_SERVICE_VERSION" ]; then
+            REPORT+="🛑 Python code was changed, but `__version__` value was not updated in `api/app/version.py` (still $NEW_SERVICE_VERSION)\n"
             EXIT_CODE=1
           else
-            REPORT+="✅ api/app/version.py includes a version change.\n"
+            REPORT+="✅ `api/app/version.py` version changed: $OLD_SERVICE_VERSION → $NEW_SERVICE_VERSION\n"
           fi
 
           # Check each changed version folder
           for v in $VERSIONS; do
-            INIT_CHANGED=$(git diff "$BASE_SHA"...HEAD -- "api/app/routes/$v/__init__.py" | grep '__version__ = ' || true)
-            if [ -z "$INIT_CHANGED" ]; then
-              REPORT+="🛑 Version $v was modified, but __version__ was not updated in api/app/routes/$v/__init__.py\n"
+            OLD_API_VERSION=$(git show "$BASE_SHA:api/app/routes/$v/__init__.py" 2>/dev/null | grep -E "^__version__\s*=" | sed -E "s/^__version__\s*=\s*['\"]([^'\"]+)['\"].*$/\1/" || echo "")
+            NEW_API_VERSION=$(get_version "api/app/routes/$v/__init__.py")
+
+            if [ "$OLD_API_VERSION" = "$NEW_API_VERSION" ]; then
+              REPORT+="🛑 Version $v was modified, but `__version__` value was not updated in `api/app/routes/$v/__init__.py` (still $NEW_API_VERSION)\n"
               EXIT_CODE=1
             else
-              REPORT+="✅ api/app/routes/$v/__init__.py includes a version change.\n"
+              REPORT+="✅ `api/app/routes/$v/__init__.py` version changed: $OLD_API_VERSION → $NEW_API_VERSION\n"
             fi
           done
 
