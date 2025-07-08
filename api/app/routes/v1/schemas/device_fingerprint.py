@@ -18,10 +18,11 @@ class DeviceFingerprintTypes:
     """Reusable field types for device fingerprint schemas."""
 
     AppId = AppFieldTypes.Id
-
     FingerprintHash = CommonFieldTypes.HashedField
-
     Id = CommonFieldTypes.UUID
+    UserAgent = CommonFieldTypes.UserAgent
+    LastSeenAt = CommonFieldTypes.NonFutureTimestamp
+    UserId = UserFieldTypes.Id
 
     DeviceName = Annotated[
         str,
@@ -33,9 +34,3 @@ class DeviceFingerprintTypes:
             examples=["iPhone 12", "Samsung Galaxy S21"],
         ),
     ]
-
-    UserAgent = CommonFieldTypes.UserAgent
-
-    LastSeenAt = CommonFieldTypes.NonFutureTimestamp
-
-    UserId = UserFieldTypes.Id

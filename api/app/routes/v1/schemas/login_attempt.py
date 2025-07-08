@@ -18,19 +18,12 @@ class LoginAttemptTypes:
     """Reusable field types for login attempt schemas."""
 
     AppId = AppFieldTypes.Id
-
     AttemptedAt = CommonFieldTypes.NonFutureTimestamp
-
     EmailEncrypted = CommonFieldTypes.EncryptedField
-
     EmailHashed = CommonFieldTypes.HashedField
-
     Id = CommonFieldTypes.Id
-
     IpAddress = CommonFieldTypes.IpAddress
-
     UserAgent = CommonFieldTypes.UserAgent
-
     UserId = UserFieldTypes.Id
 
     WasSuccessful = Annotated[

@@ -18,14 +18,13 @@ class DeviceFingerprintTypes:
     """Reusable field types for device fingerprint schemas."""
 
     AppId = AppFieldTypes.Id
-
     CreatedAt = CommonFieldTypes.NonFutureTimestamp
-
     ExpiresAt = CommonFieldTypes.FutureTimestamp
-
     Id = CommonFieldTypes.Id
-
     IpAddress = CommonFieldTypes.IpAddress
+    Token = CommonFieldTypes.Token
+    UserAgent = CommonFieldTypes.UserAgent
+    UserId = UserFieldTypes.Id
 
     IsActive = Annotated[
         bool,
@@ -37,8 +36,6 @@ class DeviceFingerprintTypes:
         ),
     ]
 
-    Token = CommonFieldTypes.Token
-
     TokenType = Annotated[
         str,
         Field(
@@ -48,7 +45,3 @@ class DeviceFingerprintTypes:
             examples=["access", "refresh"],
         ),
     ]
-
-    UserAgent = CommonFieldTypes.UserAgent
-
-    UserId = UserFieldTypes.Id

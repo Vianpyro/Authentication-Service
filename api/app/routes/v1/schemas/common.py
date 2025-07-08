@@ -76,7 +76,7 @@ class CommonFieldTypes:
             min_length=64,
             max_length=64,
             description="Hash of the field",
-            example=hash_field("".join(choice(ascii_letters) for _ in range(10))),
+            example=hash_field("".join(choice(ascii_letters) for _ in range(10)), "example_salt"),
         ),
     ]
 
@@ -85,6 +85,8 @@ class CommonFieldTypes:
         Field(
             title="ID",
             description="Unique identifier",
+            ge=1,
+            le=MAX_SIZE,
             example=randint(1, MAX_SIZE),
             default=1,
         ),
@@ -104,7 +106,7 @@ class CommonFieldTypes:
         Field(
             title="Non-Future Timestamp",
             description="Timestamp that cannot be in the future",
-            examples=[datetime.now(), datetime(2020, 1, 1, 0, 0, 0)],
+            examples=[datetime.now() - timedelta(minutes=1), datetime(2020, 1, 1, 0, 0, 0)],
         ),
         AfterValidator(validate_non_future_timestamp),
     ]

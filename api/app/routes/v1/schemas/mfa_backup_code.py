@@ -18,12 +18,10 @@ class MFABackupCodeTypes:
     """Reusable field types for MFA backup code schemas."""
 
     AppId = AppFieldTypes.Id
-
     CodeHash = CommonFieldTypes.HashedField
-
     CreatedAt = CommonFieldTypes.NonFutureTimestamp
-
     Id = CommonFieldTypes.UUID
+    UserId = UserFieldTypes.Id
 
     Used = Annotated[
         bool,
@@ -33,5 +31,3 @@ class MFABackupCodeTypes:
             default=False,
         ),
     ]
-
-    UserId = UserFieldTypes.Id

@@ -18,8 +18,9 @@ class SecurityEventTypes:
     """Reusable field types for security event schemas."""
 
     AppId = AppFieldTypes.Id
-
     Id = CommonFieldTypes.Id
+    OccurredAt = CommonFieldTypes.NonFutureTimestamp
+    UserId = UserFieldTypes.Id
 
     EventType = Annotated[
         str,
@@ -43,7 +44,3 @@ class SecurityEventTypes:
             example={"ip_address": "192.168.1.1", "user_agent": "Mozilla/5.0"},
         ),
     ]
-
-    OccurredAt = CommonFieldTypes.NonFutureTimestamp
-
-    UserId = UserFieldTypes.Id
