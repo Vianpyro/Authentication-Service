@@ -17,7 +17,7 @@ BEGIN
     VALUES (
         p_challenge_token_hash,
         'mfa_challenge',
-        'challenge',
+        'mfa_challenge',
         p_user_id,
         p_app_id
     )

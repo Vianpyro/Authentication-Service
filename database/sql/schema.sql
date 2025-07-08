@@ -22,7 +22,7 @@ CREATE TYPE token_type AS ENUM (
     'recovery_email_verification',
     'session'
 );
-CREATE TYPE session_token_type AS ENUM ('access', 'challenge', 'refresh');
+CREATE TYPE session_token_type AS ENUM ('access', 'mfa_challenge', 'refresh');
 CREATE TYPE event_type AS ENUM ('password_changed', '2fa_enabled', '2fa_disabled', 'account_locked', 'sanitized');
 CREATE TYPE api_permission AS ENUM ('read_users', 'write_users', 'admin', 'analytics', 'webhooks');
 
@@ -126,8 +126,8 @@ CREATE TABLE tokens (
     ),
     -- Ensure session_type is only set for session tokens
     CONSTRAINT chk_session_type_only_when_session CHECK (
-        (token_type = 'session' AND session_type IS NOT NULL)
-        OR (token_type <> 'session' AND session_type IS NULL)
+    (token_type IN ('session', 'mfa_challenge') AND session_type IS NOT NULL)
+    OR (token_type NOT IN ('session', 'mfa_challenge') AND session_type IS NULL)
     )
 );
 

@@ -9,6 +9,8 @@ Users are the primary entities that interact with applications, and this module 
 - User deletion with verification
 """
 
+from typing import Union
+
 from app.routes.v1.schemas.user import UserLogin2faResponse, UserLoginRequest, UserLoginResponse
 from app.utility.database import get_db
 from app.utility.security import create_token, hash_email, hash_token, verify_password
@@ -106,7 +108,7 @@ async def create_mfa_challenge_session(user_id: int, db: AsyncSession, app_id: i
 @router.post(
     "/login",
     status_code=status.HTTP_200_OK,
-    response_model=UserLoginResponse,
+    response_model=Union[UserLoginResponse, UserLogin2faResponse],
     response_description="User logged in successfully",
 )
 async def login_user(user: UserLoginRequest, request: Request, db: AsyncSession = Depends(get_db)):
@@ -121,7 +123,8 @@ async def login_user(user: UserLoginRequest, request: Request, db: AsyncSession 
         db: Database session dependency
 
     Returns:
-        UserLoginResponse: Response containing user details upon successful login
+        Union[UserLoginResponse, UserLogin2faResponse]: Response containing user details upon successful login.
+        Returns UserLogin2faResponse if 2FA is enabled, UserLoginResponse otherwise.
 
     Raises:
         HTTPException: If authentication fails or user is not found
