@@ -25,7 +25,8 @@ Security Features:
 
 import asyncio
 import time
-from datetime import datetime
+import zoneinfo
+from datetime import datetime, timezone
 from random import uniform as jitter
 
 from app.routes.v1.schemas.email import RegistrationEmailSchema
@@ -133,12 +134,19 @@ async def register_pending_user(
 
     # Format expires_at to human readable string
     if isinstance(expires_at, datetime):
-        if expires_at.tzinfo is not None:
-            tz_name = expires_at.strftime("%Z") or expires_at.strftime("%z")
-        else:
-            tz_name = "UTC"
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
 
-        expires_at_formatted = expires_at.strftime(f"%B %d, %Y at %I:%M %p {tz_name}")
+        if pending_user.timezone:
+            try:
+                user_tz = zoneinfo.ZoneInfo(pending_user.timezone)
+                expires_at_local = expires_at.astimezone(user_tz)
+                tz_name = expires_at_local.strftime("%Z")
+                expires_at_formatted = expires_at_local.strftime(f"%B %d, %Y at %I:%M %p {tz_name}")
+            except (zoneinfo.ZoneInfoNotFoundError, ValueError):
+                expires_at_formatted = expires_at.strftime("%B %d, %Y at %I:%M %p UTC")
+        else:
+            expires_at_formatted = expires_at.strftime("%B %d, %Y at %I:%M %p UTC")
     else:
         expires_at_formatted = str(expires_at)
 

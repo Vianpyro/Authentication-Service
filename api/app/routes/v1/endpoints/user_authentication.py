@@ -37,7 +37,7 @@ async def create_login_session(user_id: int, db: AsyncSession, app_id: int, requ
     Returns:
         dict: A dictionary containing session details including access and refresh tokens
     """
-    session_token = create_token()
+    access_token = create_token()
     refresh_token = create_token()
 
     await db.execute(
@@ -46,7 +46,7 @@ async def create_login_session(user_id: int, db: AsyncSession, app_id: int, requ
             CALL create_session (
                 p_app_id => :app_id,
                 p_user_id => :user_id,
-                p_session_token_hash => :session_token,
+                p_access_token_hash => :access_token,
                 p_refresh_token_hash => :refresh_token,
                 p_ip_address => :ip_address,
                 p_user_agent => :user_agent
@@ -55,14 +55,14 @@ async def create_login_session(user_id: int, db: AsyncSession, app_id: int, requ
         {
             "app_id": app_id,
             "user_id": user_id,
-            "session_token": hash_token(session_token),
+            "access_token": hash_token(access_token),
             "refresh_token": hash_token(refresh_token),
             "ip_address": request.client.host if request.client else None,
             "user_agent": request.headers.get("user-agent", ""),
         },
     )
 
-    return session_token, refresh_token
+    return access_token, refresh_token
 
 
 async def create_mfa_challenge_session(user_id: int, db: AsyncSession, app_id: int, request: Request):
@@ -176,13 +176,13 @@ async def login_user(user: UserLoginRequest, request: Request, db: AsyncSession 
         user_dict = dict(user_data._mapping) if hasattr(user_data, "_mapping") else dict(user_data)
 
         if user_data.is_2fa_enabled:
-            mfa_session_token = await create_mfa_challenge_session(user_data.id, db, user.app_id, request)
-            user_dict.update({"challenge_token": mfa_session_token})
+            mfa_access_token = await create_mfa_challenge_session(user_data.id, db, user.app_id, request)
+            user_dict.update({"challenge_token": mfa_access_token})
             return UserLogin2faResponse.model_validate(user_dict)
 
         # Create session and refresh tokens for the opaque token flow
-        session_token, refresh_token = await create_login_session(user_data.id, db, user.app_id, request)
-        user_dict.update({"session_token": session_token, "refresh_token": refresh_token})
+        access_token, refresh_token = await create_login_session(user_data.id, db, user.app_id, request)
+        user_dict.update({"access_token": access_token, "refresh_token": refresh_token})
         return UserLoginResponse.model_validate(user_dict)
 
     except Exception as e:

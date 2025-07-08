@@ -1,7 +1,7 @@
 CREATE OR REPLACE PROCEDURE create_session(
     p_app_id UUID,
     p_user_id UUID,
-    p_session_token_hash BYTEA,
+    p_access_token_hash BYTEA,
     p_refresh_token_hash BYTEA,
     -- p_device_fingerprint_hash TEXT,
     -- p_device_name TEXT,
@@ -17,7 +17,7 @@ BEGIN
     -- Insert the access token
     INSERT INTO tokens (token_hash, token_type, session_type, user_id, app_id)
     VALUES (
-        p_session_token_hash,
+        p_access_token_hash,
         'session',
         'access',
         p_user_id,

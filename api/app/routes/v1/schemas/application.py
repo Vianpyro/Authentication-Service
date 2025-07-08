@@ -45,7 +45,7 @@ class AppFieldTypes:
             title="Application Description",
             max_length=500,
             description="Optional new description for the application",
-            examples="Updated description of the application",
+            example="Updated description of the application",
         ),
     ]
 
