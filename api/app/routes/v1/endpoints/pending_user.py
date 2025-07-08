@@ -36,12 +36,9 @@ from app.routes.v1.schemas.pending_user import (
 )
 from app.utility.database import get_db
 from app.utility.email.sender import send_email_background
-from app.utility.security import (
-    create_verification_token,
-    encrypt_email,
-    hash_email,
-    hash_password,
-)
+from app.utility.security import create_token
+from app.utility.security import encrypt_field as encrypt_email
+from app.utility.security import hash_email, hash_password
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
@@ -93,36 +90,29 @@ async def register_pending_user(
         HTTPException: Only for unexpected database errors (integrity errors are silenced)
     """
     start = time.monotonic() + jitter(0, 0.1)
-
-    email_encrypted = encrypt_email(pending_user.email)
-    email_hash = hash_email(pending_user.email)
-    verification_token = create_verification_token()
-
-    # Extract IP address and user agent from request
-    ip_address = request.client.host if request.client else None
-    user_agent = request.headers.get("user-agent", "")
+    verification_token = create_token()
 
     try:
         result = await db.execute(
             text(
                 """
                 SELECT register_pending_user(
-                    :p_app_id,
-                    :p_token,
-                    :p_email_encrypted,
-                    :p_email_hash,
-                    :p_ip_address,
-                    :p_user_agent
+                    p_app_id => :app_id,
+                    p_token => :token,
+                    p_email_encrypted => :email_encrypted,
+                    p_email_hash => :email_hash,
+                    p_ip_address => :ip_address,
+                    p_user_agent => :user_agent
                 )
                 """
             ),
             {
-                "p_app_id": pending_user.app_id,
-                "p_token": verification_token,
-                "p_email_encrypted": email_encrypted,
-                "p_email_hash": email_hash,
-                "p_ip_address": ip_address,
-                "p_user_agent": user_agent,
+                "app_id": pending_user.app_id,
+                "token": verification_token,
+                "email_encrypted": encrypt_email(pending_user.email),
+                "email_hash": hash_email(pending_user.email),
+                "ip_address": request.client.host if request.client else None,
+                "user_agent": request.headers.get("user-agent", ""),
             },
         )
         expires_at = result.scalar()
@@ -153,10 +143,7 @@ async def register_pending_user(
         expires_at_formatted = str(expires_at)
 
     # Retrieve the application name from the database
-    result = await db.execute(
-        text("SELECT app_name FROM applications WHERE id = :app_id"),
-        {"app_id": pending_user.app_id},
-    )
+    result = await db.execute(text("SELECT get_application_name(:app_id)"), {"app_id": pending_user.app_id})
     app_name = result.scalar()
 
     send_email_background(
@@ -221,10 +208,6 @@ async def confirm_pending_user(
         - Atomic database operations to prevent race conditions
     """
 
-    # Extract IP address and user agent from request
-    ip_address = request.client.host if request.client else None
-    user_agent = request.headers.get("user-agent", "")
-
     # Define error mappings for cleaner exception handling
     error_mappings = {
         "Pending user not found": (
@@ -252,14 +235,21 @@ async def confirm_pending_user(
     try:
         result = await db.execute(
             text(
-                "SELECT confirm_pending_user(:p_app_id, :p_token, :p_password, :p_ip_address, :p_user_agent)"
+                """
+                SELECT confirm_pending_user(
+                    p_app_id => :app_id,
+                    p_token => :token,
+                    p_password => :password,
+                    p_ip_address => :ip_address,
+                    p_user_agent => :user_agent
+                )"""
             ),
             {
-                "p_app_id": pending_user.app_id,
-                "p_token": pending_user.token,
-                "p_password": hash_password(pending_user.password),
-                "p_ip_address": ip_address,
-                "p_user_agent": user_agent,
+                "app_id": pending_user.app_id,
+                "token": pending_user.token,
+                "password": hash_password(pending_user.password),
+                "ip_address": request.client.host if request.client else None,
+                "user_agent": request.headers.get("user-agent", ""),
             },
         )
         await db.commit()

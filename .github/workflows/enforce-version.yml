@@ -11,15 +11,18 @@ on:
     branches:
       - main
     paths:
+      - 'database/sql/**/*.sql'
       - 'api/app/**/*.py'
 
 jobs:
   detect-changes:
     uses: ./.github/workflows/detect-changed-versions.yml
+
   suggest-version-bump:
     uses: ./.github/workflows/suggest-version-bump.yml
 
   enforce-version:
+    name: Enforce Version Update
     needs: detect-changes
     runs-on: ubuntu-latest
 
@@ -29,36 +32,60 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set changed versions
-        id: set_versions
-        run: |
-          echo "VERSIONS=${{ needs.detect-changes.outputs.versions }}" >> "$GITHUB_ENV"
+      - name: Set changed versions as environment variable
+        run: echo "VERSIONS=${{ needs.detect-changes.outputs.versions }}" >> "$GITHUB_ENV"
 
       - name: Check version bumps
-        id: check_versions
         run: |
           git fetch origin main
           BASE_SHA=$(git merge-base HEAD origin/main)
           EXIT_CODE=0
           REPORT=""
 
-          # Check api/app/version.py
-          VERSION_PY_CHANGED=$(git diff "$BASE_SHA"...HEAD -- "api/app/version.py" | grep '__version__ = ' || true)
-          if [ -z "$VERSION_PY_CHANGED" ]; then
-            REPORT+="🛑 Python code was changed, but __version__ was not updated in api/app/version.py\n"
+          # Function to extract __version__ value from a file
+          get_version() {
+            local file="$1"
+            if [ -f "$file" ]; then
+              grep -E "^__version__\s*=" "$file" | sed -E "s/^__version__\s*=\s*['\"]([^'\"]+)['\"].*$/\1/"
+            else
+              echo ""
+            fi
+          }
+
+          # Function to extract __version__ from a file at a given git commit
+          get_version_from_commit() {
+            local commit="$1"
+            local file="$2"
+            git show "$commit:$file" 2>/dev/null | grep -E "^__version__\s*=" | sed -E "s/^__version__\s*=\s*['\"]([^'\"]+)['\"].*$/\1/" || echo ""
+          }
+
+          # Check the main service version
+          OLD_SERVICE_VERSION=$(get_version_from_commit "$BASE_SHA" "api/app/version.py")
+          NEW_SERVICE_VERSION=$(get_version "api/app/version.py")
+
+          echo "Debug: OLD_SERVICE_VERSION='$OLD_SERVICE_VERSION'"
+          echo "Debug: NEW_SERVICE_VERSION='$NEW_SERVICE_VERSION'"
+
+          if [ "$OLD_SERVICE_VERSION" = "$NEW_SERVICE_VERSION" ]; then
+            REPORT+="🛑 Python code was changed, but \`__version__\` value was not updated in \`api/app/version.py\` (still $NEW_SERVICE_VERSION)\n"
             EXIT_CODE=1
           else
-            REPORT+="✅ api/app/version.py includes a version change.\n"
+            REPORT+="✅ \`api/app/version.py\` version changed: $OLD_SERVICE_VERSION → $NEW_SERVICE_VERSION\n"
           fi
 
-          # Check each changed version folder
+          # Check each versioned API route folder
           for v in $VERSIONS; do
-            INIT_CHANGED=$(git diff "$BASE_SHA"...HEAD -- "api/app/routes/$v/__init__.py" | grep '__version__ = ' || true)
-            if [ -z "$INIT_CHANGED" ]; then
-              REPORT+="🛑 Version $v was modified, but __version__ was not updated in api/app/routes/$v/__init__.py\n"
+            OLD_API_VERSION=$(get_version_from_commit "$BASE_SHA" "api/app/routes/$v/__init__.py")
+            NEW_API_VERSION=$(get_version "api/app/routes/$v/__init__.py")
+
+            echo "Debug: $v OLD_API_VERSION='$OLD_API_VERSION'"
+            echo "Debug: $v NEW_API_VERSION='$NEW_API_VERSION'"
+
+            if [ "$OLD_API_VERSION" = "$NEW_API_VERSION" ]; then
+              REPORT+="🛑 Version $v was modified, but \`__version__\` value was not updated in \`api/app/routes/$v/__init__.py\` (still $NEW_API_VERSION)\n"
               EXIT_CODE=1
             else
-              REPORT+="✅ api/app/routes/$v/__init__.py includes a version change.\n"
+              REPORT+="✅ \`api/app/routes/$v/__init__.py\` version changed: $OLD_API_VERSION → $NEW_API_VERSION\n"
             fi
           done
 

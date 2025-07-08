@@ -45,14 +45,7 @@ class PendingUserCreate(BaseModel):
         ),
     ]
 
-    email: Annotated[
-        str,
-        Field(
-            title="Email",
-            description="The email address of the pending user.",
-            example="user@example.com",
-        ),
-    ]
+    email: CommonFieldTypes.Email
 
 
 class PendingUserConfirmation(BaseModel):

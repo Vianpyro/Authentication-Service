@@ -7,32 +7,43 @@ across different schema modules to ensure consistency and reduce duplication.
 
 import ipaddress
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from random import choice, randint
 from string import ascii_letters
 from sys import maxsize as MAX_SIZE
 from typing import Annotated
 
-from app.utility.security import create_verification_token, encrypt_field, hash_field
+from app.utility.security import create_token, encrypt_field, hash_field
 from pydantic import AfterValidator, Field
 
 
 def validate_future_timestamp(value: datetime) -> datetime:
     """Validate that the timestamp is in the future."""
-    if value <= datetime.now():
+    now = datetime.now(timezone.utc) if value.tzinfo is not None else datetime.now()
+    if value <= now:
         raise ValueError("Timestamp must be in the future")
     return value
 
 
 def validate_non_future_timestamp(value: datetime) -> datetime:
     """Validate that the timestamp is not in the future."""
-    if value > datetime.now():
+    now = datetime.now(timezone.utc) if value.tzinfo is not None else datetime.now()
+    if value > now:
         raise ValueError("Timestamp cannot be in the future")
     return value
 
 
 class CommonFieldTypes:
     """Common field types used across multiple schema modules."""
+
+    Email = Annotated[
+        str,
+        Field(
+            title="Email",
+            description="Email address of the user",
+            example="user@example.com",
+        ),
+    ]
 
     EncryptedField = Annotated[
         str,
@@ -105,8 +116,8 @@ class CommonFieldTypes:
             pattern=r"^[a-zA-Z0-9_-]{32,128}$",
             min_length=32,
             max_length=128,
-            description="Unique token for the pending user",
-            example=create_verification_token(),
+            description="Secure token used for authentication",
+            example=create_token(),
         ),
     ]
 

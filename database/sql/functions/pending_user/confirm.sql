@@ -59,8 +59,8 @@ BEGIN
     END IF;
 
     -- Create the new user
-    INSERT INTO users (app_id, email_encrypted, email_hash, password_hash)
-    VALUES (v_pending_user.app_id, v_pending_user.email_encrypted, v_pending_user.email_hash, p_password)
+    INSERT INTO users (app_id, email_encrypted, email_hash, password_hash, is_email_verified)
+    VALUES (v_pending_user.app_id, v_pending_user.email_encrypted, v_pending_user.email_hash, p_password, TRUE)
     RETURNING id INTO v_user_id;
 
     -- If user creation is successful, delete the pending user (this will cascade delete the token)
@@ -71,3 +71,5 @@ BEGIN
 END;
 $$
 LANGUAGE plpgsql;
+
+GRANT EXECUTE ON FUNCTION delete_application TO api;

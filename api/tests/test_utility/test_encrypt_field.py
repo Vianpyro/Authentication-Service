@@ -1,20 +1,19 @@
 import re
 
 import pytest
-
-from app.utility.security import decrypt_field, encrypt_email, encrypt_phone
+from app.utility.security import decrypt_field, encrypt_field
 
 
 @pytest.fixture
 def encrypted_email(sample_email):
     """Fixture to provide an encrypted email for testing."""
-    return encrypt_email(sample_email)
+    return encrypt_field(sample_email)
 
 
 @pytest.fixture
 def encrypted_phone(sample_phone):
     """Fixture to provide an encrypted phone number for testing."""
-    return encrypt_phone(sample_phone)
+    return encrypt_field(sample_phone)
 
 
 def test_encrypt_field_type(encrypted_email, encrypted_phone):

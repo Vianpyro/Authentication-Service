@@ -1,8 +1,7 @@
 import re
 
 import pytest
-
-from app.utility.security import hash_email, hash_phone
+from app.utility.security import hash_email, hash_field
 
 
 @pytest.fixture
@@ -14,7 +13,7 @@ def hashed_email(sample_email):
 @pytest.fixture
 def hashed_phone(sample_phone):
     """Fixture to provide a hashed phone number for testing."""
-    return hash_phone(sample_phone)
+    return hash_field(sample_phone)
 
 
 def test_hash_field_type(hashed_email, hashed_phone):

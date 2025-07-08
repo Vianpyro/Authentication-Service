@@ -51,22 +51,15 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r api/requirements-dev.txt
-          pip install pytest-cov
+          pip install pytest-cov pytest-env
 
-      - name: Run Pytest (Linux/macOS)
-        if: runner.os != 'Windows'
+      - name: Run Pytest
         working-directory: api
         env:
-          MAIL_USERNAME: "github@actions.com"
-          MAIL_PASSWORD: "PassW0rd2PassTests"
-          MAIL_SERVER: "smtp.unittest.com"
-        run: python -m pytest --doctest-modules --junitxml=junit/test-results.xml --cov=app --cov-report=xml --cov-report=html
-
-      - name: Run Pytest (Windows)
-        if: runner.os == 'Windows'
-        working-directory: api
-        env:
-          MAIL_USERNAME: "github@actions.com"
-          MAIL_PASSWORD: "PassW0rd2PassTests"
-          MAIL_SERVER: "smtp.unittest.com"
+          MAIL_USERNAME: "fake@username.com"
+          MAIL_PASSWORD: "fake-password"
+          MAIL_SERVER: "smtp.fake-domain.com"
+          AES_SECRET_KEY: "00000000000000000000000000000000"
+          PASSWORD_PEPPER: "not-a-real-password-pepper"
+          TOKEN_PEPPER: "not-a-real-token-pepper"
         run: python -m pytest --doctest-modules --junitxml=junit/test-results.xml --cov=app --cov-report=xml --cov-report=html
