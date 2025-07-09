@@ -9,8 +9,7 @@ RETURNS TABLE (
     password_hash ARGON2ID_HASH,
     is_email_verified BOOLEAN,
     is_2fa_enabled BOOLEAN
-)
-AS $$
+) AS $$
 DECLARE
     v_user users%ROWTYPE;
 BEGIN

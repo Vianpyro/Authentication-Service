@@ -5,8 +5,7 @@ CREATE OR REPLACE FUNCTION confirm_pending_user(
     p_ip_address INET,
     p_user_agent TEXT
 )
-RETURNS UUID
-AS $$
+RETURNS UUID AS $$
 DECLARE
     v_pending_user pending_users%ROWTYPE;
     v_token tokens%ROWTYPE;

@@ -2,8 +2,7 @@ CREATE OR REPLACE FUNCTION delete_application(
     p_app_id UUID,
     p_slug TEXT
 )
-RETURNS TEXT
-AS $$
+RETURNS TEXT AS $$
 DECLARE
     v_name TEXT;
 BEGIN

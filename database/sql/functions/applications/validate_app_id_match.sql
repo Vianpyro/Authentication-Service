@@ -1,7 +1,6 @@
 -- Function to validate app_id matches user app_id
 CREATE OR REPLACE FUNCTION validate_app_id_match()
-RETURNS TRIGGER
-AS $$
+RETURNS TRIGGER AS $$
 DECLARE
     expected_app_id UUID;
 BEGIN

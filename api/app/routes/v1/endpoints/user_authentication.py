@@ -11,12 +11,14 @@ Users are the primary entities that interact with applications, and this module 
 
 from typing import Union
 
-from app.routes.v1.schemas.user import UserLogin2faResponse, UserLoginRequest, UserLoginResponse
 from app.utility.database import get_db
 from app.utility.security import create_token, hash_email, hash_token, verify_password
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from ..schemas.totp_secret import TOTPSecretChallengeRequest
+from ..schemas.user import UserLogin2faResponse, UserLoginRequest, UserLoginResponse
 
 router = APIRouter()
 
@@ -61,6 +63,7 @@ async def create_login_session(user_id: int, db: AsyncSession, app_id: int, requ
             "user_agent": request.headers.get("user-agent", ""),
         },
     )
+    await db.commit()
 
     return access_token, refresh_token
 
@@ -164,24 +167,24 @@ async def login_user(user: UserLoginRequest, request: Request, db: AsyncSession 
                 "user_agent": request.headers.get("user-agent", ""),
             },
         )
-        user_data = result.fetchone()
+        data = result.fetchone()
 
-        if not user_data:
+        if not data:
             raise ValueError("User not found with specified email")
 
-        if not verify_password(user.password, user_data.password_hash):
+        if not verify_password(user.password, data.password_hash):
             raise ValueError("Invalid password")
 
         # Convert to response model for adding tokens
-        user_dict = dict(user_data._mapping) if hasattr(user_data, "_mapping") else dict(user_data)
+        user_dict = dict(data._mapping) if hasattr(data, "_mapping") else dict(data)
 
-        if user_data.is_2fa_enabled:
-            mfa_access_token = await create_mfa_challenge_session(user_data.id, db, user.app_id, request)
+        if data.is_2fa_enabled:
+            mfa_access_token = await create_mfa_challenge_session(data.id, db, user.app_id, request)
             user_dict.update({"challenge_token": mfa_access_token})
             return UserLogin2faResponse.model_validate(user_dict)
 
         # Create session and refresh tokens for the opaque token flow
-        access_token, refresh_token = await create_login_session(user_data.id, db, user.app_id, request)
+        access_token, refresh_token = await create_login_session(data.id, db, user.app_id, request)
         user_dict.update({"access_token": access_token, "refresh_token": refresh_token})
         return UserLoginResponse.model_validate(user_dict)
 
@@ -197,28 +200,52 @@ async def login_user(user: UserLoginRequest, request: Request, db: AsyncSession 
         raise
 
 
-# @router.post(
-#     "/confirm",
-#     status_code=status.HTTP_200_OK,
-#     response_model=UserLoginResponse,
-#     response_description="User confirmed 2FA successfully",
-# )
-# async def confirm_2fa(totp: TOTPSecretChallengeRequest, db: AsyncSession = Depends(get_db)):
-#     """
-#     Confirm 2FA for a user.
+@router.post(
+    "/challenge",
+    status_code=status.HTTP_200_OK,
+    response_model=UserLoginResponse,
+    response_description="User confirmed 2FA successfully",
+)
+async def confirm_2fa(totp: TOTPSecretChallengeRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Confirm 2FA for a user.
 
-#     This endpoint is used to confirm the second factor authentication (2FA) for a user.
-#     It is typically called after the user has provided their TOTP code.
+    This endpoint is used to confirm the second factor authentication (2FA) for a user.
+    It is typically called after the user has provided their TOTP code.
 
-#     Args:
-#         user: Request data containing the user's email, password, and TOTP code
-#         request: The HTTP request object to extract client information
-#         db: Database session dependency
+    Args:
+        user: Request data containing the user's email, password, and TOTP code
+        request: The HTTP request object to extract client information
+        db: Database session dependency
 
-#     Returns:
-#         UserLoginResponse: Response containing user details upon successful confirmation
+    Returns:
+        UserLoginResponse: Response containing user details upon successful confirmation
 
-#     Raises:
-#         HTTPException: If confirmation fails or user is not found
-#     """
-#     pass
+    Raises:
+        HTTPException: If confirmation fails or user is not found
+    """
+    result = await db.execute(
+        text(...),  # TODO
+        {"p_app_id": totp.app_id, "p_token": totp.code},
+    )
+    data = result.scalar_one_or_none()
+
+    if not data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="TOTP secret not found for user",
+        )
+
+    if not data.verify(totp.totp_code):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid TOTP code",
+        )
+
+    # Convert to response model for adding tokens
+    user_dict = dict(data._mapping) if hasattr(data, "_mapping") else dict(data)
+
+    # Create session and refresh tokens for the opaque token flow
+    access_token, refresh_token = await create_login_session(totp.user_id, db, totp.app_id, totp.request)
+    user_dict.update({"access_token": access_token, "refresh_token": refresh_token})
+    return UserLoginResponse.model_validate(user_dict)

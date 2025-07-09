@@ -29,12 +29,6 @@ import zoneinfo
 from datetime import datetime, timezone
 from random import uniform as jitter
 
-from app.routes.v1.schemas.email import RegistrationEmailSchema
-from app.routes.v1.schemas.pending_user import (
-    RegisterConfirmationRequest,
-    RegisterConfirmationResponse,
-    RegisterRequest,
-)
 from app.utility.database import get_db
 from app.utility.email.sender import send_email_background
 from app.utility.security import create_token
@@ -44,6 +38,9 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request,
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from ..schemas.email import RegistrationEmailSchema
+from ..schemas.pending_user import RegisterConfirmationRequest, RegisterConfirmationResponse, RegisterRequest
 
 router = APIRouter()
 MIN_RESPONSE_TIME_SECONDS = 0.45

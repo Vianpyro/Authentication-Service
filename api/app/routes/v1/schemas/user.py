@@ -117,8 +117,8 @@ class UserLoginResponse(BaseModel):
     id: UserFieldTypes.Id
     is_email_verified: UserFieldTypes.IsEmailVerified
     is_2fa_enabled: UserFieldTypes.Is2FAEnabled
-    session_token: CommonFieldTypes.Token
-    refresh_token: CommonFieldTypes.Token
+    access_token: str
+    refresh_token: str
 
     class Config:
         from_attributes = True

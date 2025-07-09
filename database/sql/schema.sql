@@ -202,11 +202,15 @@ CREATE UNIQUE INDEX unique_active_token_idx ON sessions (token_id) WHERE is_acti
 CREATE TABLE totp_secrets (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID UNIQUE REFERENCES users (id) ON DELETE CASCADE,
+
     secret_encrypted NON_EMPTY_TEXT NOT NULL,
     secret_hash SHA_256_HASH NOT NULL,
     key_version SMALLINT NOT NULL DEFAULT 1,
+
     created_at NON_FUTURE_TIMESTAMPTZ NOT NULL DEFAULT current_timestamp,
-    confirmed_at NON_FUTURE_TIMESTAMPTZ
+    confirmed_at NON_FUTURE_TIMESTAMPTZ,
+
+    UNIQUE (user_id, secret_hash)
 );
 
 -- 🔐 RLS Policy for TOTP Secrets
@@ -217,12 +221,17 @@ USING (user_id IN (
     WHERE app_id = current_setting('app.id')::UUID
 ));
 
+-- 🗃️ Wordlist Table: For MFA backup codes
+CREATE TABLE wordlist (
+    word TEXT PRIMARY KEY CHECK (char_length(word) >= 3 AND char_length(word) <= 10 AND word ~ '^[a-z-]+$')
+);
+
 -- 🔐 MFA Backup Codes Table: Stores 2FA backup codes
 CREATE TABLE mfa_backup_codes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     app_id UUID NOT NULL REFERENCES applications (id) ON DELETE CASCADE,
-    code_hash SHA_256_HASH NOT NULL,
+    code_hash BYTEA NOT NULL,
     used BOOLEAN NOT NULL DEFAULT FALSE,
     created_at NON_FUTURE_TIMESTAMPTZ NOT NULL DEFAULT current_timestamp,
     used_at NON_FUTURE_TIMESTAMPTZ

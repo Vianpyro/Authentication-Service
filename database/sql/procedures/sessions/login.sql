@@ -7,8 +7,7 @@ CREATE OR REPLACE PROCEDURE create_session(
     -- p_device_name TEXT,
     p_ip_address INET,
     p_user_agent TEXT
-)
-AS $$
+) AS $$
 DECLARE
     v_access_token_id INTEGER;
     v_refresh_token_id INTEGER;
