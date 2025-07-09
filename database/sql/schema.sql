@@ -126,8 +126,8 @@ CREATE TABLE tokens (
     ),
     -- Ensure session_type is only set for session tokens
     CONSTRAINT chk_session_type_only_when_session CHECK (
-    (token_type IN ('session', 'mfa_challenge') AND session_type IS NOT NULL)
-    OR (token_type NOT IN ('session', 'mfa_challenge') AND session_type IS NULL)
+        (token_type IN ('session', 'mfa_challenge') AND session_type IS NOT NULL)
+        OR (token_type NOT IN ('session', 'mfa_challenge') AND session_type IS NULL)
     )
 );
 

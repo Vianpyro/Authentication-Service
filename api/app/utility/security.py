@@ -27,10 +27,14 @@ ph = PasswordHasher()
 AES_KEY = bytes.fromhex(os.getenv("AES_SECRET_KEY") or "")
 PASSWORD_PEPPER = os.getenv("PASSWORD_PEPPER", "")
 TOKEN_PEPPER = os.getenv("TOKEN_PEPPER", "").encode("utf-8")
-FIELD_HASH_SALT = os.getenv("FIELD_HASH_SALT", "public-tenant-aware-salt").encode("utf-8")
+FIELD_HASH_SALT = os.getenv("FIELD_HASH_SALT", "public-tenant-aware-salt").encode(
+    "utf-8"
+)
 
 if not AES_KEY or not PASSWORD_PEPPER or not TOKEN_PEPPER:
-    raise RuntimeError("Missing required secrets: AES_SECRET_KEY, PASSWORD_PEPPER, or TOKEN_PEPPER")
+    raise RuntimeError(
+        "Missing required secrets: AES_SECRET_KEY, PASSWORD_PEPPER, or TOKEN_PEPPER"
+    )
 
 
 # --- Token Utilities ---
@@ -142,7 +146,9 @@ def hash_email(email: str, namespace: str) -> str:
 
 
 # --- OTP Verification ---
-def verify_otp(secret: str, otp_code: str, method: str = "TOTP", counter: int = 0) -> bool:
+def verify_otp(
+    secret: str, otp_code: str, method: str = "TOTP", counter: int = 0
+) -> bool:
     """Verify a one-time password (TOTP or HOTP)."""
     try:
         if method == "TOTP":
