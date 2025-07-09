@@ -1,6 +1,6 @@
 from app.utility.authentication import create_login_session
 from app.utility.database import get_db
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,7 +16,7 @@ router = APIRouter()
     response_model=UserLoginResponse,
     response_description="User confirmed 2FA successfully",
 )
-async def confirm_2fa(totp: TOTPSecretChallengeRequest, db: AsyncSession = Depends(get_db)):
+async def confirm_2fa(request_body: TOTPSecretChallengeRequest, request: Request, db: AsyncSession = Depends(get_db)):
     """
     Confirm 2FA for a user.
 
@@ -36,7 +36,7 @@ async def confirm_2fa(totp: TOTPSecretChallengeRequest, db: AsyncSession = Depen
     """
     result = await db.execute(
         text(...),  # TODO
-        {"p_app_id": totp.app_id, "p_token": totp.code},
+        {"p_app_id": request_body.app_id, "p_token": request_body.code},
     )
     data = result.scalar_one_or_none()
 
@@ -46,7 +46,7 @@ async def confirm_2fa(totp: TOTPSecretChallengeRequest, db: AsyncSession = Depen
             detail="TOTP secret not found for user",
         )
 
-    if not data.verify(totp.totp_code):
+    if not data.verify(request_body.totp_code):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid TOTP code",
@@ -56,6 +56,6 @@ async def confirm_2fa(totp: TOTPSecretChallengeRequest, db: AsyncSession = Depen
     user_dict = dict(data._mapping) if hasattr(data, "_mapping") else dict(data)
 
     # Create session and refresh tokens for the opaque token flow
-    access_token, refresh_token = await create_login_session(totp.user_id, db, totp.app_id, totp.request)
+    access_token, refresh_token = await create_login_session(request_body.user_id, db, request_body.app_id, request)
     user_dict.update({"access_token": access_token, "refresh_token": refresh_token})
     return UserLoginResponse.model_validate(user_dict)

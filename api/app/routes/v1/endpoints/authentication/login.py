@@ -29,7 +29,7 @@ router = APIRouter()
     response_model=Union[UserLoginResponse, UserLogin2faResponse],
     response_description="User logged in successfully",
 )
-async def login_user(user: UserLoginRequest, request: Request, db: AsyncSession = Depends(get_db)):
+async def login_user(request_body: UserLoginRequest, request: Request, db: AsyncSession = Depends(get_db)):
     """
     Log in a user with email and password.
 
@@ -76,8 +76,8 @@ async def login_user(user: UserLoginRequest, request: Request, db: AsyncSession 
                 )"""
             ),
             {
-                "app_id": user.app_id,
-                "email_hash": hash_email(user.email, user.app_id),
+                "app_id": request_body.app_id,
+                "email_hash": hash_email(request_body.email, request_body.app_id),
                 "ip_address": request.client.host if request.client else None,
                 "user_agent": request.headers.get("user-agent", ""),
             },
@@ -87,19 +87,19 @@ async def login_user(user: UserLoginRequest, request: Request, db: AsyncSession 
         if not data:
             raise ValueError("User not found with specified email")
 
-        if not verify_password(user.password, data.password_hash):
+        if not verify_password(request_body.password, data.password_hash):
             raise ValueError("Invalid password")
 
         # Convert to response model for adding tokens
         user_dict = dict(data._mapping) if hasattr(data, "_mapping") else dict(data)
 
         if data.is_2fa_enabled:
-            mfa_access_token = await create_mfa_challenge_session(data.id, db, user.app_id, request)
+            mfa_access_token = await create_mfa_challenge_session(data.id, db, request_body.app_id, request)
             user_dict.update({"challenge_token": mfa_access_token})
             return UserLogin2faResponse.model_validate(user_dict)
 
         # Create session and refresh tokens for the opaque token flow
-        access_token, refresh_token = await create_login_session(data.id, db, user.app_id, request)
+        access_token, refresh_token = await create_login_session(data.id, db, request_body.app_id, request)
         user_dict.update({"access_token": access_token, "refresh_token": refresh_token})
         return UserLoginResponse.model_validate(user_dict)
 

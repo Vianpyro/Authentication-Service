@@ -17,7 +17,7 @@ MIN_RESPONSE_TIME_SECONDS = 0.45
     response_description="User account created successfully",
 )
 async def confirm_pending_user(
-    pending_user: RegisterConfirmationRequest,
+    request_body: RegisterConfirmationRequest,
     request: Request,
     db: AsyncSession = Depends(get_db),
 ):
@@ -94,9 +94,9 @@ async def confirm_pending_user(
                 )"""
             ),
             {
-                "app_id": pending_user.app_id,
-                "token_hash": hash_token(pending_user.token),
-                "password": hash_password(pending_user.password),
+                "app_id": request_body.app_id,
+                "token_hash": hash_token(request_body.token),
+                "password": hash_password(request_body.password),
                 "ip_address": request.client.host if request.client else None,
                 "user_agent": request.headers.get("user-agent", ""),
             },

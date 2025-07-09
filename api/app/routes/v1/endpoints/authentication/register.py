@@ -49,7 +49,7 @@ MIN_RESPONSE_TIME_SECONDS = 0.45
 @router.post("", status_code=status.HTTP_204_NO_CONTENT, response_description="Verification email sent successfully")
 async def register_pending_user(
     background_tasks: BackgroundTasks,
-    pending_user: RegisterRequest,
+    request_body: RegisterRequest,
     request: Request,
     db: AsyncSession = Depends(get_db),
 ):
@@ -101,10 +101,10 @@ async def register_pending_user(
                 """
             ),
             {
-                "app_id": pending_user.app_id,
+                "app_id": request_body.app_id,
                 "token_hash": hash_token(verification_token),
-                "email_encrypted": encrypt_email(pending_user.email),
-                "email_hash": hash_email(pending_user.email, pending_user.app_id),
+                "email_encrypted": encrypt_email(request_body.email),
+                "email_hash": hash_email(request_body.email, request_body.app_id),
                 "ip_address": request.client.host if request.client else None,
                 "user_agent": request.headers.get("user-agent", ""),
             },
@@ -130,9 +130,9 @@ async def register_pending_user(
         if expires_at.tzinfo is None:
             expires_at = expires_at.replace(tzinfo=timezone.utc)
 
-        if pending_user.timezone:
+        if request_body.timezone:
             try:
-                user_tz = zoneinfo.ZoneInfo(pending_user.timezone)
+                user_tz = zoneinfo.ZoneInfo(request_body.timezone)
                 expires_at_local = expires_at.astimezone(user_tz)
                 tz_name = expires_at_local.strftime("%Z")
                 expires_at_formatted = expires_at_local.strftime(f"%B %d, %Y at %I:%M %p {tz_name}")
@@ -144,17 +144,17 @@ async def register_pending_user(
         expires_at_formatted = str(expires_at)
 
     # Retrieve the application name from the database
-    result = await db.execute(text("SELECT get_application_name(:app_id)"), {"app_id": pending_user.app_id})
+    result = await db.execute(text("SELECT get_application_name(:app_id)"), {"app_id": request_body.app_id})
     app_name = result.scalar()
 
     send_email_background(
         background_tasks,
         RegistrationEmailSchema(
-            recipients=[pending_user.email],
+            recipients=[request_body.email],
             subject=f"{app_name} - Email Verification",
             body={
                 "title": app_name,
-                "confirmation_url": f"{pending_user.confirmation_url}?token={verification_token}",
+                "confirmation_url": f"{request_body.confirmation_url}?token={verification_token}",
                 "expires_at": expires_at_formatted,
             },
             template_path="registration_email_v1.html",
