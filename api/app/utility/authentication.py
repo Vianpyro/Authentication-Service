@@ -92,5 +92,6 @@ async def create_mfa_challenge_session(user_id: int, db: AsyncSession, app_id: i
             "user_agent": request.headers.get("user-agent", ""),
         },
     )
+    await db.commit()
 
     return challenge_token
