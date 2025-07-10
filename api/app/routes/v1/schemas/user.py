@@ -114,10 +114,10 @@ class UserLoginResponse(BaseModel):
     This schema is used to return the user ID after successful login.
     """
 
+    access_token: str
     id: UserFieldTypes.Id
     is_email_verified: UserFieldTypes.IsEmailVerified
     is_2fa_enabled: UserFieldTypes.Is2FAEnabled
-    access_token: str
     refresh_token: str
 
     class Config:
@@ -131,6 +131,7 @@ class UserLogin2faResponse(BaseModel):
     This schema is used to return the user ID after successful login.
     """
 
+    challenge_token: CommonFieldTypes.Token
     id: UserFieldTypes.Id
     is_email_verified: UserFieldTypes.IsEmailVerified
     is_2fa_enabled: UserFieldTypes.Is2FAEnabled
