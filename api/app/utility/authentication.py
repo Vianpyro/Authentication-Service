@@ -5,7 +5,7 @@ This module provides reusable functions for creating login sessions, MFA challen
 and other authentication-related operations used across multiple endpoints.
 """
 
-from app.utility.security import create_token, hash_token
+from app.utility.security.tokens import create_token, hash_token
 from fastapi import Request
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession

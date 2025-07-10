@@ -31,9 +31,9 @@ from random import uniform as jitter
 
 from app.utility.database import get_db
 from app.utility.email.sender import send_email_background
-from app.utility.security import create_token
-from app.utility.security import encrypt_field as encrypt_email
-from app.utility.security import hash_email, hash_token
+from app.utility.security.encryption import encrypt_field as encrypt_email
+from app.utility.security.hashing import hash_email
+from app.utility.security.tokens import create_token, hash_token
 from fastapi import APIRouter, BackgroundTasks, Depends, Request, status
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError

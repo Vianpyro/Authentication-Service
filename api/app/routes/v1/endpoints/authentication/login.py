@@ -13,7 +13,8 @@ from typing import Union
 
 from app.utility.authentication import create_login_session, create_mfa_challenge_session
 from app.utility.database import get_db
-from app.utility.security import hash_email, verify_password
+from app.utility.security.hashing import hash_email
+from app.utility.security.password import verify_password
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession

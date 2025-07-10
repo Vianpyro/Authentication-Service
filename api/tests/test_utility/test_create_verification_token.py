@@ -1,7 +1,7 @@
 import re
 
 import pytest
-from app.utility.security import create_token
+from app.utility.security.tokens import create_token
 
 
 @pytest.fixture

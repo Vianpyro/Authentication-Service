@@ -9,7 +9,7 @@ from random import choice
 from string import ascii_letters
 from typing import Annotated
 
-from app.utility.security import hash_password, validate_password_complexity
+from app.utility.security.password import hash_password, validate_password_complexity
 from pydantic import AfterValidator, BaseModel, Field
 
 from .application import AppFieldTypes
