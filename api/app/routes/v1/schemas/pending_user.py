@@ -60,7 +60,6 @@ class RegisterConfirmationRequest(BaseModel):
     """Schema for confirming a pending user registration."""
 
     app_id: PendingUserTypes.AppId
-    token: PendingUserTypes.Token
     password: UserFieldTypes.Password
 
 

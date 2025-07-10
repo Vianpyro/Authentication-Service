@@ -1,6 +1,6 @@
 from app.utility.database import get_db
 from app.utility.security import hash_password, hash_token
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,6 +20,7 @@ async def confirm_pending_user(
     request_body: RegisterConfirmationRequest,
     request: Request,
     db: AsyncSession = Depends(get_db),
+    authorization: str = Header(None, alias="Authorization"),
 ):
     """
     Complete user registration by validating verification token and creating user account.
@@ -81,6 +82,15 @@ async def confirm_pending_user(
         ),
     }
 
+    # Extract token from Authorization header
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header missing or invalid format",
+        )
+
+    token = authorization.split(" ", 1)[1]
+
     try:
         result = await db.execute(
             text(
@@ -95,7 +105,7 @@ async def confirm_pending_user(
             ),
             {
                 "app_id": request_body.app_id,
-                "token_hash": hash_token(request_body.token),
+                "token_hash": hash_token(token),
                 "password": hash_password(request_body.password),
                 "ip_address": request.client.host if request.client else None,
                 "user_agent": request.headers.get("user-agent", ""),

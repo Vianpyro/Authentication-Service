@@ -41,9 +41,6 @@ class TOTPSecretFieldTypes:
 class TOTPSecretChallengeRequest(BaseModel):
     """Schema for TOTP secret challenge request."""
 
-    app_id: AppFieldTypes.Id
-    token: CommonFieldTypes.Token
-
     code: Annotated[
         int,
         Field(

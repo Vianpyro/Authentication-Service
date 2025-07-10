@@ -1,7 +1,7 @@
 from app.utility.authentication import create_login_session, create_mfa_challenge_session
 from app.utility.database import get_db
 from app.utility.security import decrypt_field, encrypt_field, hash_field, hash_token, verify_otp
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from pyotp import random_base32 as generate_otp_secret
 from sqlalchemy import text
 from sqlalchemy.exc import DBAPIError, IntegrityError
@@ -78,7 +78,12 @@ async def setup_totp_secret(request_body: TOTPSecretSetupRequest, request: Reque
     response_model=UserLoginResponse,
     response_description="User confirmed 2FA successfully",
 )
-async def confirm_2fa(request_body: TOTPSecretChallengeRequest, request: Request, db: AsyncSession = Depends(get_db)):
+async def confirm_2fa(
+    request_body: TOTPSecretChallengeRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    authorization: str = Header(None, alias="Authorization"),
+):
     """
     Confirm 2FA for a user.
 
@@ -86,9 +91,10 @@ async def confirm_2fa(request_body: TOTPSecretChallengeRequest, request: Request
     It is typically called after the user has provided their TOTP code.
 
     Args:
-        user: Request data containing the user's email, password, and TOTP code
+        request_body: Request data containing the user's app_id and TOTP code
         request: The HTTP request object to extract client information
         db: Database session dependency
+        authorization: Authorization header containing the Bearer token
 
     Returns:
         UserLoginResponse: Response containing user details upon successful confirmation
@@ -96,10 +102,19 @@ async def confirm_2fa(request_body: TOTPSecretChallengeRequest, request: Request
     Raises:
         HTTPException: If confirmation fails or user is not found
     """
+    # Extract token from Authorization header
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header missing or invalid format",
+        )
+
+    token = authorization.split(" ", 1)[1]
+
     try:
         result = await db.execute(
             text("SELECT * FROM get_totp_secret(p_token_hash => :p_token_hash)"),
-            {"p_token_hash": hash_token(request_body.token)},
+            {"p_token_hash": hash_token(token)},
         )
         data = result.fetchone()
     except DBAPIError as e:
@@ -123,7 +138,7 @@ async def confirm_2fa(request_body: TOTPSecretChallengeRequest, request: Request
 
     result = await db.execute(
         text("SELECT get_email_verification_status(p_app_id => :p_app_id, p_user_id => :p_user_id)"),
-        {"p_app_id": request_body.app_id, "p_user_id": data.user_id},
+        {"p_app_id": data.app_id, "p_user_id": data.user_id},
     )
     user_data = result.fetchone()
 
@@ -134,7 +149,7 @@ async def confirm_2fa(request_body: TOTPSecretChallengeRequest, request: Request
         )
 
     # Create session and refresh tokens for the opaque token flow
-    access_token, refresh_token = await create_login_session(data.user_id, db, request_body.app_id, request)
+    access_token, refresh_token = await create_login_session(data.user_id, db, data.app_id, request)
     return UserLoginResponse(
         access_token=access_token,
         id=data.user_id,
