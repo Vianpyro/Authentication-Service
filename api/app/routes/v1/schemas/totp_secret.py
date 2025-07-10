@@ -42,12 +42,13 @@ class TOTPSecretChallengeRequest(BaseModel):
     """Schema for TOTP secret challenge request."""
 
     code: Annotated[
-        int,
+        str,
         Field(
             description="The TOTP code provided by the user.",
-            example=randint(100_000, 999_999),
-            ge=100_000,
-            le=999_999,
+            min_length=6,
+            max_length=6,
+            pattern=r"^\d{6}$",
+            example=str(randint(100_000, 999_999)),
         ),
     ]
 
