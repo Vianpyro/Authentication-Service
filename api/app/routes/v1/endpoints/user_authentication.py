@@ -9,9 +9,15 @@ Users are the primary entities that interact with applications, and this module 
 - User deletion with verification
 """
 
-from app.routes.v1.schemas.user import UserLogin, UserLogin2faResponse, UserLoginResponse
+from typing import Union
+
+from app.routes.v1.schemas.user import (
+    UserLogin2faResponse,
+    UserLoginRequest,
+    UserLoginResponse,
+)
 from app.utility.database import get_db
-from app.utility.security import create_token, hash_email, verify_password
+from app.utility.security import create_token, hash_email, hash_token, verify_password
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,7 +25,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 router = APIRouter()
 
 
-async def create_and_return_session(user_id: int, db: AsyncSession, app_id: int, request: Request):
+async def create_login_session(
+    user_id: int, db: AsyncSession, app_id: int, request: Request
+):
     """
     Create a session for the user and return session details.
 
@@ -41,11 +49,11 @@ async def create_and_return_session(user_id: int, db: AsyncSession, app_id: int,
     await db.execute(
         text(
             """
-            SELECT create_session (
+            CALL create_session (
                 p_app_id => :app_id,
                 p_user_id => :user_id,
-                p_session_token => :session_token,
-                p_refresh_token => :refresh_token,
+                p_session_token_hash => :session_token,
+                p_refresh_token_hash => :refresh_token,
                 p_ip_address => :ip_address,
                 p_user_agent => :user_agent
             )"""
@@ -53,8 +61,8 @@ async def create_and_return_session(user_id: int, db: AsyncSession, app_id: int,
         {
             "app_id": app_id,
             "user_id": user_id,
-            "session_token": session_token,
-            "refresh_token": refresh_token,
+            "session_token": hash_token(session_token),
+            "refresh_token": hash_token(refresh_token),
             "ip_address": request.client.host if request.client else None,
             "user_agent": request.headers.get("user-agent", ""),
         },
@@ -63,13 +71,57 @@ async def create_and_return_session(user_id: int, db: AsyncSession, app_id: int,
     return session_token, refresh_token
 
 
+async def create_mfa_challenge_session(
+    user_id: int, db: AsyncSession, app_id: int, request: Request
+):
+    """
+    Create a multi-factor authentication (MFA) challenge session for the user.
+
+    This function initiates an MFA challenge session for the user and returns the challenge token.
+
+    Args:
+        user_id: The ID of the user for whom the MFA challenge is being created
+        db: Database session dependency
+        app_id: The ID of the application for which the MFA challenge is created
+        request: The HTTP request object to extract client information
+
+    Returns:
+        str: The challenge token for the MFA session
+    """
+    challenge_token = create_token()
+
+    await db.execute(
+        text(
+            """
+            CALL create_mfa_challenge_session (
+                p_app_id => :app_id,
+                p_user_id => :user_id,
+                p_challenge_token_hash => :challenge_token_hash,
+                p_ip_address => :ip_address,
+                p_user_agent => :user_agent
+            )"""
+        ),
+        {
+            "app_id": app_id,
+            "user_id": user_id,
+            "challenge_token_hash": hash_token(challenge_token),
+            "ip_address": request.client.host if request.client else None,
+            "user_agent": request.headers.get("user-agent", ""),
+        },
+    )
+
+    return challenge_token
+
+
 @router.post(
     "/login",
     status_code=status.HTTP_200_OK,
-    response_model=UserLoginResponse,
+    response_model=Union[UserLoginResponse, UserLogin2faResponse],
     response_description="User logged in successfully",
 )
-async def login_user(user: UserLogin, request: Request, db: AsyncSession = Depends(get_db)):
+async def login_user(
+    user: UserLoginRequest, request: Request, db: AsyncSession = Depends(get_db)
+):
     """
     Log in a user with email and password.
 
@@ -81,7 +133,8 @@ async def login_user(user: UserLogin, request: Request, db: AsyncSession = Depen
         db: Database session dependency
 
     Returns:
-        UserLoginResponse: Response containing user details upon successful login
+        Union[UserLoginResponse, UserLogin2faResponse]: Response containing user details upon successful login.
+        Returns UserLogin2faResponse if 2FA is enabled, UserLoginResponse otherwise.
 
     Raises:
         HTTPException: If authentication fails or user is not found
@@ -116,7 +169,7 @@ async def login_user(user: UserLogin, request: Request, db: AsyncSession = Depen
             ),
             {
                 "app_id": user.app_id,
-                "email_hash": hash_email(user.email),
+                "email_hash": hash_email(user.email, user.app_id),
                 "ip_address": request.client.host if request.client else None,
                 "user_agent": request.headers.get("user-agent", ""),
             },
@@ -129,16 +182,27 @@ async def login_user(user: UserLogin, request: Request, db: AsyncSession = Depen
         if not verify_password(user.password, user_data.password_hash):
             raise ValueError("Invalid password")
 
+        # Convert to response model for adding tokens
+        user_dict = (
+            dict(user_data._mapping)
+            if hasattr(user_data, "_mapping")
+            else dict(user_data)
+        )
+
         if user_data.is_2fa_enabled:
-            return UserLogin2faResponse.model_validate(user_data)
+            mfa_session_token = await create_mfa_challenge_session(
+                user_data.id, db, user.app_id, request
+            )
+            user_dict.update({"challenge_token": mfa_session_token})
+            return UserLogin2faResponse.model_validate(user_dict)
 
         # Create session and refresh tokens for the opaque token flow
-        session_token, refresh_token = await create_and_return_session(user_data.id, db, user.app_id, request)
-
-        # Convert to response model by adding tokens to user data
-        user_dict = dict(user_data._mapping) if hasattr(user_data, "_mapping") else dict(user_data)
-        user_dict.update({"session_token": session_token, "refresh_token": refresh_token})
-
+        session_token, refresh_token = await create_login_session(
+            user_data.id, db, user.app_id, request
+        )
+        user_dict.update(
+            {"session_token": session_token, "refresh_token": refresh_token}
+        )
         return UserLoginResponse.model_validate(user_dict)
 
     except Exception as e:
@@ -151,3 +215,30 @@ async def login_user(user: UserLogin, request: Request, db: AsyncSession = Depen
 
         # Re-raise unknown exceptions
         raise
+
+
+# @router.post(
+#     "/confirm",
+#     status_code=status.HTTP_200_OK,
+#     response_model=UserLoginResponse,
+#     response_description="User confirmed 2FA successfully",
+# )
+# async def confirm_2fa(totp: TOTPSecretChallengeRequest, db: AsyncSession = Depends(get_db)):
+#     """
+#     Confirm 2FA for a user.
+
+#     This endpoint is used to confirm the second factor authentication (2FA) for a user.
+#     It is typically called after the user has provided their TOTP code.
+
+#     Args:
+#         user: Request data containing the user's email, password, and TOTP code
+#         request: The HTTP request object to extract client information
+#         db: Database session dependency
+
+#     Returns:
+#         UserLoginResponse: Response containing user details upon successful confirmation
+
+#     Raises:
+#         HTTPException: If confirmation fails or user is not found
+#     """
+#     pass

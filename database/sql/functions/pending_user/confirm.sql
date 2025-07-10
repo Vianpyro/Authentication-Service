@@ -1,6 +1,6 @@
 CREATE OR REPLACE FUNCTION confirm_pending_user(
     p_app_id UUID,
-    p_token URLSAFE_TOKEN,
+    p_token_hash BYTEA,
     p_password ARGON2ID_HASH,
     p_ip_address INET,
     p_user_agent TEXT
@@ -17,7 +17,7 @@ BEGIN
     SELECT *
     INTO v_token
     FROM tokens
-    WHERE token = p_token
+    WHERE token_hash = p_token_hash
     AND token_type = 'email_verification'
     AND app_id = p_app_id;
 

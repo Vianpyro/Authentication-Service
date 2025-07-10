@@ -14,6 +14,10 @@ from .common import CommonFieldTypes
 class AppFieldTypes:
     """Reusable field types for application schemas."""
 
+    CreatedAt = CommonFieldTypes.NonFutureTimestamp
+    Id = CommonFieldTypes.UUID
+    UpdatedAt = CommonFieldTypes.NonFutureTimestamp
+
     AppName = Annotated[
         str,
         Field(
@@ -25,29 +29,25 @@ class AppFieldTypes:
         ),
     ]
 
-    CreatedAt = CommonFieldTypes.NonFutureTimestamp
-
     Description = Annotated[
-        str | None,
+        str,
         Field(
             title="Application Description",
             max_length=500,
             description="Optional new description for the application",
-            examples=["Updated description of the application"],
+            example="Updated description of the application",
         ),
     ]
 
     Description = Annotated[
-        str | None,
+        str,
         Field(
             title="Application Description",
             max_length=500,
             description="Optional new description for the application",
-            examples=["Updated description of the application"],
+            examples="Updated description of the application",
         ),
     ]
-
-    Id = CommonFieldTypes.UUID
 
     IsActive = Annotated[
         bool,
