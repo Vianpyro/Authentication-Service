@@ -12,7 +12,11 @@ import hmac
 import os
 import secrets
 
+from app.utility.database import get_db
 from dotenv import load_dotenv
+from fastapi import Depends, Header, HTTPException, status
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 load_dotenv()
 
@@ -36,3 +40,66 @@ def hash_token(token: str) -> bytes:
 def verify_token(token: str, stored_hash: bytes) -> bool:
     """Constant-time check of a token."""
     return hmac.compare_digest(hash_token(token), stored_hash)
+
+
+async def validate_access_token(token: str, db: AsyncSession) -> dict:
+    """Validate an access token by checking its hash in the database."""
+    try:
+        result = await db.execute(
+            text("SELECT * FROM get_access_token(p_token_hash => :p_token_hash)"),
+            {"p_token_hash": hash_token(token)},
+        )
+        data = result.fetchone()
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired access token",
+        ) from e
+
+    return data
+
+
+async def require_access_token(
+    authorization: str = Header(..., alias="Authorization"),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid Authorization header format",
+        )
+    token = authorization.removeprefix("Bearer ").strip()
+
+    user_session = await validate_access_token(token, db)
+    if not user_session:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired access token",
+        )
+    return user_session
+
+
+async def require_challenge_token(
+    mfa_challenge: str = Header(..., alias="X-TOTP-Challenge"),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    if not mfa_challenge.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid challenge header format",
+        )
+    token = mfa_challenge.removeprefix("Bearer ").strip()
+
+    result = await db.execute(
+        text("SELECT * FROM get_totp_secret(p_token_hash => :p_token_hash)"),
+        {"p_token_hash": hash_token(token)},
+    )
+    data = result.fetchone()
+
+    if not data:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="TOTP challenge token invalid or expired",
+        )
+    return data
