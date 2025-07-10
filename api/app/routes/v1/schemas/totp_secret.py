@@ -43,6 +43,7 @@ class TOTPSecretChallengeRequest(BaseModel):
 
     app_id: AppFieldTypes.Id
     token: CommonFieldTypes.Token
+
     code: Annotated[
         int,
         Field(

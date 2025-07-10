@@ -1,10 +1,10 @@
 from app.utility.authentication import create_login_session, create_mfa_challenge_session
 from app.utility.database import get_db
-from app.utility.security import encrypt_field, hash_field, hash_token
+from app.utility.security import decrypt_field, encrypt_field, hash_field, hash_token, verify_otp
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pyotp import random_base32 as generate_otp_secret
 from sqlalchemy import text
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ....schemas.totp_secret import TOTPSecretChallengeRequest, TOTPSecretSetupRequest, TOTPSecretSetupResponse
@@ -17,7 +17,7 @@ router = APIRouter()
     "/setup",
     status_code=status.HTTP_200_OK,
     response_model=TOTPSecretSetupResponse,
-    response_description="TOTP secret setup",
+    response_description="TOTP secret setup successful, returns TOTP secret and challenge token for confirmation",
 )
 async def setup_totp_secret(request_body: TOTPSecretSetupRequest, request: Request, db: AsyncSession = Depends(get_db)):
     """
@@ -96,28 +96,49 @@ async def confirm_2fa(request_body: TOTPSecretChallengeRequest, request: Request
     Raises:
         HTTPException: If confirmation fails or user is not found
     """
-    result = await db.execute(
-        text("SELECT * FROM get_totp_secret(p_token_hash => :p_token_hash)"),
-        {"p_token_hash": hash_token(request_body.token)},
-    )
-    data = result.scalar_one_or_none()
+    try:
+        result = await db.execute(
+            text("SELECT * FROM get_totp_secret(p_token_hash => :p_token_hash)"),
+            {"p_token_hash": hash_token(request_body.token)},
+        )
+        data = result.fetchone()
+    except DBAPIError as e:
+        if "TOTP token not found" in str(e):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="TOTP token not found or expired",
+            )
 
-    if not data:
+    if not data or not data.secret_encrypted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="TOTP secret not found for user",
         )
 
-    if not data.verify(request_body.totp_code):
+    if not verify_otp(decrypt_field(data.secret_encrypted), request_body.code):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid TOTP code",
         )
 
-    # Convert to response model for adding tokens
-    user_dict = dict(data._mapping) if hasattr(data, "_mapping") else dict(data)
+    result = await db.execute(
+        text("SELECT get_email_verification_status(p_app_id => :p_app_id, p_user_id => :p_user_id)"),
+        {"p_app_id": request_body.app_id, "p_user_id": data.user_id},
+    )
+    user_data = result.fetchone()
+
+    if user_data is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
 
     # Create session and refresh tokens for the opaque token flow
-    access_token, refresh_token = await create_login_session(request_body.user_id, db, request_body.app_id, request)
-    user_dict.update({"access_token": access_token, "refresh_token": refresh_token})
-    return UserLoginResponse.model_validate(user_dict)
+    access_token, refresh_token = await create_login_session(data.user_id, db, request_body.app_id, request)
+    return UserLoginResponse(
+        access_token=access_token,
+        id=data.user_id,
+        is_email_verified=user_data[0],
+        is_2fa_enabled=True,
+        refresh_token=refresh_token,
+    )

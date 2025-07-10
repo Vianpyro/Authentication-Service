@@ -109,7 +109,7 @@ async def register_pending_user(
                 "user_agent": request.headers.get("user-agent", ""),
             },
         )
-        expires_at = result.scalar()
+        expires_at = result.scalar_one_or_none()
 
     # Silently handle integrity errors (e.g., duplicate email)
     except IntegrityError:
@@ -145,7 +145,7 @@ async def register_pending_user(
 
     # Retrieve the application name from the database
     result = await db.execute(text("SELECT get_application_name(:app_id)"), {"app_id": request_body.app_id})
-    app_name = result.scalar()
+    app_name = result.scalar_one_or_none()
 
     send_email_background(
         background_tasks,

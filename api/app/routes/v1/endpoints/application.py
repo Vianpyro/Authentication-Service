@@ -242,7 +242,7 @@ async def delete_application(request_body: AppDelete, db: AsyncSession = Depends
         {"app_id": request_body.app_id, "slug": request_body.slug},
     )
 
-    name = result.scalar()
+    name = result.scalar_one_or_none()
     if name is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
