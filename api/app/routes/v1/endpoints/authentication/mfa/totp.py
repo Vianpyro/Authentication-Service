@@ -83,6 +83,7 @@ async def confirm_2fa(
     request: Request,
     db: AsyncSession = Depends(get_db),
     authorization: str = Header(None, alias="Authorization"),
+    mfa_challenge: str = Header(None, alias="X-TOTP-Challenge"),
 ):
     """
     Confirm 2FA for a user.
@@ -102,19 +103,30 @@ async def confirm_2fa(
     Raises:
         HTTPException: If confirmation fails or user is not found
     """
-    # Extract token from Authorization header
+    # Validate the presence of the Authorization header
+    # TODO: Use an actual authentication middleware to handle this
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authorization header missing or invalid format",
         )
 
-    token = authorization.split(" ", 1)[1]
+    # Extract the Bearer token from the Authorization header
+    access_token = authorization.split(" ", 1)[1]
+
+    # Extract the Bearer token from the X-TOTP-Challenge header
+    if not mfa_challenge or not mfa_challenge.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Challenge header missing or invalid format",
+        )
+
+    challenge_token = mfa_challenge.split(" ", 1)[1]
 
     try:
         result = await db.execute(
             text("SELECT * FROM get_totp_secret(p_token_hash => :p_token_hash)"),
-            {"p_token_hash": hash_token(token)},
+            {"p_token_hash": hash_token(challenge_token)},
         )
         data = result.fetchone()
     except DBAPIError as e:
