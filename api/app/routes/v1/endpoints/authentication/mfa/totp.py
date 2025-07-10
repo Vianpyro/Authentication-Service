@@ -1,9 +1,9 @@
 from app.utility.authentication import create_login_session, create_mfa_challenge_session
 from app.utility.database import get_db
-from app.utility.security.encryption import decrypt_field, encrypt_field, hash_field, hash_token, verify_otp
-from app.utility.security.hashing import hash_field, verify_otp
+from app.utility.security.encryption import decrypt_field, encrypt_field
+from app.utility.security.hashing import hash_field
 from app.utility.security.mfa import verify_otp
-from app.utility.security.tokens import verify_otp
+from app.utility.security.tokens import hash_token
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from pyotp import random_base32 as generate_otp_secret
 from sqlalchemy import text

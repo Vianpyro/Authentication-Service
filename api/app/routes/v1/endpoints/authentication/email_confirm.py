@@ -1,5 +1,6 @@
 from app.utility.database import get_db
-from app.utility.security.hashing import hash_password, hash_token
+from app.utility.security.password import hash_password
+from app.utility.security.tokens import hash_token
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
