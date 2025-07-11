@@ -30,15 +30,15 @@ from random import uniform as jitter
 
 from app.routes.v1.schemas.email import RegistrationEmailSchema
 from app.routes.v1.schemas.pending_user import (
-    PendingUserConfirmation,
-    PendingUserConfirmationResponse,
-    PendingUserCreate,
+    RegisterConfirmationRequest,
+    RegisterConfirmationResponse,
+    RegisterRequest,
 )
 from app.utility.database import get_db
 from app.utility.email.sender import send_email_background
 from app.utility.security import create_token
 from app.utility.security import encrypt_field as encrypt_email
-from app.utility.security import hash_email, hash_password
+from app.utility.security import hash_email, hash_password, hash_token
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
@@ -49,13 +49,13 @@ MIN_RESPONSE_TIME_SECONDS = 0.45
 
 
 @router.post(
-    "/",
+    "/register",
     status_code=status.HTTP_204_NO_CONTENT,
     response_description="Verification email sent successfully",
 )
 async def register_pending_user(
     background_tasks: BackgroundTasks,
-    pending_user: PendingUserCreate,
+    pending_user: RegisterRequest,
     request: Request,
     db: AsyncSession = Depends(get_db),
 ):
@@ -98,7 +98,7 @@ async def register_pending_user(
                 """
                 SELECT register_pending_user(
                     p_app_id => :app_id,
-                    p_token => :token,
+                    p_token_hash => :token_hash,
                     p_email_encrypted => :email_encrypted,
                     p_email_hash => :email_hash,
                     p_ip_address => :ip_address,
@@ -108,9 +108,9 @@ async def register_pending_user(
             ),
             {
                 "app_id": pending_user.app_id,
-                "token": verification_token,
+                "token_hash": hash_token(verification_token),
                 "email_encrypted": encrypt_email(pending_user.email),
-                "email_hash": hash_email(pending_user.email),
+                "email_hash": hash_email(pending_user.email, pending_user.app_id),
                 "ip_address": request.client.host if request.client else None,
                 "user_agent": request.headers.get("user-agent", ""),
             },
@@ -143,7 +143,9 @@ async def register_pending_user(
         expires_at_formatted = str(expires_at)
 
     # Retrieve the application name from the database
-    result = await db.execute(text("SELECT get_application_name(:app_id)"), {"app_id": pending_user.app_id})
+    result = await db.execute(
+        text("SELECT get_application_name(:app_id)"), {"app_id": pending_user.app_id}
+    )
     app_name = result.scalar()
 
     send_email_background(
@@ -164,11 +166,11 @@ async def register_pending_user(
 @router.post(
     "/confirm",
     status_code=status.HTTP_201_CREATED,
-    response_model=PendingUserConfirmationResponse,
+    response_model=RegisterConfirmationResponse,
     response_description="User account created successfully",
 )
 async def confirm_pending_user(
-    pending_user: PendingUserConfirmation,
+    pending_user: RegisterConfirmationRequest,
     request: Request,
     db: AsyncSession = Depends(get_db),
 ):
@@ -238,7 +240,7 @@ async def confirm_pending_user(
                 """
                 SELECT confirm_pending_user(
                     p_app_id => :app_id,
-                    p_token => :token,
+                    p_token_hash => :token_hash,
                     p_password => :password,
                     p_ip_address => :ip_address,
                     p_user_agent => :user_agent
@@ -246,7 +248,7 @@ async def confirm_pending_user(
             ),
             {
                 "app_id": pending_user.app_id,
-                "token": pending_user.token,
+                "token_hash": hash_token(pending_user.token),
                 "password": hash_password(pending_user.password),
                 "ip_address": request.client.host if request.client else None,
                 "user_agent": request.headers.get("user-agent", ""),
@@ -254,7 +256,7 @@ async def confirm_pending_user(
         )
         await db.commit()
 
-        return PendingUserConfirmationResponse(user_id=result.scalar())
+        return RegisterConfirmationResponse(user_id=result.scalar())
 
     except Exception as e:
         error_str = str(e)

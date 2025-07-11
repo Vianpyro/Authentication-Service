@@ -1,6 +1,6 @@
 CREATE OR REPLACE FUNCTION register_pending_user(
     p_app_id UUID,
-    p_token URLSAFE_TOKEN,
+    p_token_hash BYTEA,
     p_email_encrypted NON_EMPTY_TEXT,
     p_email_hash SHA_256_HASH,
     p_ip_address INET,
@@ -13,8 +13,8 @@ DECLARE
     v_expires_at TIMESTAMPTZ;
 BEGIN
     -- Insert the token and capture the generated ID and expiration time
-    INSERT INTO tokens (token, token_type, app_id)
-    VALUES (p_token, 'email_verification', p_app_id)
+    INSERT INTO tokens (token_hash, token_type, app_id)
+    VALUES (p_token_hash, 'email_verification', p_app_id)
     RETURNING id, expires_at INTO v_token_id, v_expires_at;
 
     -- Insert the pending user with the token ID reference
@@ -26,4 +26,4 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION delete_application TO api;
+GRANT EXECUTE ON FUNCTION register_pending_user TO api;

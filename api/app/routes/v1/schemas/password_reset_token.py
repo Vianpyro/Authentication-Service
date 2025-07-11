@@ -13,11 +13,7 @@ class PasswordResetTokenTypes:
     """Reusable field types for password reset token schemas."""
 
     CreatedAt = CommonFieldTypes.NonFutureTimestamp
-
     ExpiresAt = CommonFieldTypes.FutureTimestamp
-
     Id = CommonFieldTypes.Id
-
     Token = CommonFieldTypes.Token
-
     UserId = UserFieldTypes.Id

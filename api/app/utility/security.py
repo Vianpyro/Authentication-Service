@@ -27,9 +27,14 @@ ph = PasswordHasher()
 AES_KEY = bytes.fromhex(os.getenv("AES_SECRET_KEY") or "")
 PASSWORD_PEPPER = os.getenv("PASSWORD_PEPPER", "")
 TOKEN_PEPPER = os.getenv("TOKEN_PEPPER", "").encode("utf-8")
+FIELD_HASH_SALT = os.getenv("FIELD_HASH_SALT", "public-tenant-aware-salt").encode(
+    "utf-8"
+)
 
 if not AES_KEY or not PASSWORD_PEPPER or not TOKEN_PEPPER:
-    raise RuntimeError("Missing required secrets: AES_SECRET_KEY, PASSWORD_PEPPER, or TOKEN_PEPPER")
+    raise RuntimeError(
+        "Missing required secrets: AES_SECRET_KEY, PASSWORD_PEPPER, or TOKEN_PEPPER"
+    )
 
 
 # --- Token Utilities ---
@@ -114,23 +119,36 @@ def decrypt_field(encrypted_base64: str) -> str:
 
 
 # --- Field Hashing ---
-def hash_field(value: str) -> str:
+def hash_field(value: str, namespace: str) -> str:
     """SHA-256 hash of a UTF-8 value, for indexing."""
-    return hashlib.sha256(value.encode("utf-8")).hexdigest()
+    return hashlib.sha256(f"{namespace}:{value}".encode("utf-8")).hexdigest()
 
 
-def hash_email(email: str) -> str:
-    """Normalize + hash email (removes aliasing with '+')."""
-    email = email.lower()
-    if "+" in email:
-        local, domain = email.rsplit("@", 1)
-        local = local.split("+")[0]
-        email = f"{local}@{domain}"
-    return hash_field(email)
+def hash_email(email: str, namespace: str) -> str:
+    """
+    Generate a SHA-256 hash of the normalized email (used for fast lookup).
+    Normalizes by removing subdomain aliases (part after + and before @) to prevent duplicates.
+
+    Args:
+        email (str): The email address.
+
+    Returns:
+        str: The SHA-256 hash of the normalized email.
+    """
+    normalized_email = email.lower()
+
+    if "+" in normalized_email:
+        local_part, domain_part = normalized_email.rsplit("@", 1)
+        local_part = local_part.split("+")[0]
+        normalized_email = f"{local_part}@{domain_part}"
+
+    return hash_field(normalized_email, namespace)
 
 
 # --- OTP Verification ---
-def verify_otp(secret: str, otp_code: str, method: str = "TOTP", counter: int = 0) -> bool:
+def verify_otp(
+    secret: str, otp_code: str, method: str = "TOTP", counter: int = 0
+) -> bool:
     """Verify a one-time password (TOTP or HOTP)."""
     try:
         if method == "TOTP":

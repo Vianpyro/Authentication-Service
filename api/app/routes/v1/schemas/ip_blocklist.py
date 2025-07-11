@@ -17,8 +17,8 @@ class IPBlocklistTypes:
     """Reusable field types for IP blocklist schemas."""
 
     BlockedAt = CommonFieldTypes.NonFutureTimestamp
-
     BlockedByUser = UserFieldTypes.Id
+    IpAddress = CommonFieldTypes.IpAddress
 
     Duration = Annotated[
         timedelta,
@@ -34,8 +34,6 @@ class IPBlocklistTypes:
             ],
         ),
     ]
-
-    IpAddress = CommonFieldTypes.IpAddress
 
     ManualBlock = Annotated[
         bool,
