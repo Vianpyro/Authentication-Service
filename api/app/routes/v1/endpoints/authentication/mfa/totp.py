@@ -120,7 +120,9 @@ async def confirm_2fa(
         )
 
     result = await db.execute(
-        text("SELECT get_email_verification_status(p_app_id => :p_app_id, p_user_id => :p_user_id)"),
+        text(
+            "SELECT get_email_verification_status(p_app_id => :p_app_id, p_user_id => :p_user_id) AS is_email_verified"
+        ),
         {"p_app_id": challenge_data.app_id, "p_user_id": challenge_data.user_id},
     )
     user_data = result.fetchone()
@@ -129,13 +131,11 @@ async def confirm_2fa(
     session = await create_login_session(challenge_data.user_id, db, challenge_data.app_id, request)
 
     # Create response
-    user_dict = user_data._asdict()
     response_data = UserLoginResponse.model_validate(
         {
-            **user_dict,
+            **user_data._asdict(),
             "is_2fa_enabled": True,
             "id": challenge_data.user_id,
-            "is_email_verified": user_dict.get("get_email_verification_status", False),
         }
     ).model_dump()
     response = JSONResponse(content=jsonable_encoder(response_data))
