@@ -44,11 +44,13 @@ class TOTPSecretChallengeRequest(BaseModel):
     code: Annotated[
         str,
         Field(
-            description="The TOTP code provided by the user.",
-            min_length=6,
-            max_length=6,
-            pattern=r"^\d{6}$",
-            example=str(randint(100_000, 999_999)),
+            description="The TOTP code provided by the user, generally a 6-digit number.",
+            min_length=1,
+            examples=[
+                f"{randint(0, 999_999):06d}",
+                f"{randint(0, 99):02d}",
+                f"{randint(0, 9_999_999_999):010d}",
+            ],
         ),
     ]
 

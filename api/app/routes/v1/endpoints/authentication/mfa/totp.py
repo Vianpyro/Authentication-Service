@@ -119,6 +119,13 @@ async def confirm_2fa(
             detail="Invalid TOTP code",
         )
 
+    if not challenge_data.confirmed_at:
+        await db.execute(
+            text("CALL confirm_totp_secret(p_totp_secret_id => :totp_secret_id)"),
+            {"totp_secret_id": challenge_data.totp_secret_id},
+        )
+        await db.commit()
+
     result = await db.execute(
         text(
             "SELECT get_email_verification_status(p_app_id => :p_app_id, p_user_id => :p_user_id) AS is_email_verified"

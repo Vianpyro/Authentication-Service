@@ -3,6 +3,7 @@ CREATE OR REPLACE FUNCTION get_totp_secret(
 ) RETURNS TABLE (
     app_id UUID,
     user_id UUID,
+    totp_secret_id UUID,
     secret_encrypted NON_EMPTY_TEXT,
     key_version SMALLINT,
     created_at NON_FUTURE_TIMESTAMPTZ,
@@ -24,7 +25,7 @@ BEGIN
 
     -- Select the TOTP secret details for the user and include app_id
     RETURN QUERY
-    SELECT v_app_id, v_user_id, ts.secret_encrypted, ts.key_version, ts.created_at, ts.confirmed_at
+    SELECT v_app_id, v_user_id, ts.id, ts.secret_encrypted, ts.key_version, ts.created_at, ts.confirmed_at
     FROM totp_secrets ts
     WHERE ts.user_id = v_user_id;
 END;
