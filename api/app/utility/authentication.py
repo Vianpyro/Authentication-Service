@@ -41,8 +41,8 @@ async def create_login_session(
             FROM create_session (
                 p_app_id => :app_id,
                 p_user_id => :user_id,
-                p_access_token_hash => :access_token,
-                p_refresh_token_hash => :refresh_token,
+                p_access_token_hash => :access_token_hash,
+                p_refresh_token_hash => :refresh_token_hash,
                 p_ip_address => :ip_address,
                 p_user_agent => :user_agent
             )"""
@@ -50,8 +50,8 @@ async def create_login_session(
         {
             "app_id": app_id,
             "user_id": user_id,
-            "access_token": hash_token(access_token),
-            "refresh_token": hash_token(refresh_token),
+            "access_token_hash": hash_token(access_token),
+            "refresh_token_hash": hash_token(refresh_token),
             "ip_address": request.client.host if request.client else None,
             "user_agent": request.headers.get("user-agent", ""),
         },
@@ -59,9 +59,10 @@ async def create_login_session(
     data = result.fetchone()
     await db.commit()
 
+    # Return raw tokens to client
     return {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
+        "access_token": access_token,  # Raw token for client
+        "refresh_token": refresh_token,  # Raw token for client
         "access_token_expires_at": data.access_token_expires_at,
         "refresh_token_expires_at": data.refresh_token_expires_at,
     }
