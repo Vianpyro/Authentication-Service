@@ -3,7 +3,7 @@ from app.utility.database import get_db
 from app.utility.security.encryption import decrypt_field, encrypt_field
 from app.utility.security.hashing import hash_field
 from app.utility.security.mfa import verify_otp
-from app.utility.security.tokens import require_challenge_token
+from app.utility.security.tokens import require_access_token, require_challenge_token
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
@@ -28,7 +28,7 @@ async def setup_totp_secret(
     request_body: TOTPSecretSetupRequest,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    # user_session=Depends(require_access_token),
+    user_session=Depends(require_access_token),
 ):
     """
     Setup TOTP secret for a user.
@@ -92,7 +92,7 @@ async def confirm_2fa(
     request_body: TOTPSecretChallengeRequest,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    # user_session=Depends(require_access_token),
+    user_session=Depends(require_access_token),
     challenge_data=Depends(require_challenge_token),
 ):
     """
