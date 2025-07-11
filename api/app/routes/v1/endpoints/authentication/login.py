@@ -9,13 +9,15 @@ Users are the primary entities that interact with applications, and this module 
 - User deletion with verification
 """
 
-from typing import Union
+# from typing import Union
 
 from app.utility.authentication import create_login_session, create_mfa_challenge_session
 from app.utility.database import get_db
 from app.utility.security.hashing import hash_email
 from app.utility.security.password import verify_password
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,7 +29,7 @@ router = APIRouter()
 @router.post(
     "",
     status_code=status.HTTP_200_OK,
-    response_model=Union[UserLoginResponse, UserLogin2faResponse],
+    # response_model=Union[UserLoginResponse, UserLogin2faResponse],
     response_description="User logged in successfully",
 )
 async def login_user(request_body: UserLoginRequest, request: Request, db: AsyncSession = Depends(get_db)):
@@ -100,17 +102,34 @@ async def login_user(request_body: UserLoginRequest, request: Request, db: Async
             return UserLogin2faResponse.model_validate(user_dict)
 
         # Create session and refresh tokens for the opaque token flow
-        access_token, refresh_token = await create_login_session(data.id, db, request_body.app_id, request)
-        user_dict.update({"access_token": access_token, "refresh_token": refresh_token})
-        return UserLoginResponse.model_validate(user_dict)
+        session = await create_login_session(data.id, db, request_body.app_id, request)
 
-    except Exception as e:
-        error_str = str(e)
+        # Create response without tokens in body
+        response_data = UserLoginResponse.model_validate(user_dict).model_dump()
+        response = JSONResponse(content=jsonable_encoder(response_data))
 
-        # Check for known database errors
-        for error_msg, (status_code, detail) in error_mappings.items():
-            if error_msg in error_str:
-                raise HTTPException(status_code=status_code, detail=detail)
+        # Attach secure cookies
+        response.set_cookie(
+            key="access_token",
+            value=session["access_token"],
+            httponly=True,
+            secure=True,
+            samesite="Strict",
+            expires=session["access_token_expires_at"],
+            path="/",
+        )
+        response.set_cookie(
+            key="refresh_token",
+            value=session["refresh_token"],
+            httponly=True,
+            secure=True,
+            samesite="Strict",
+            expires=session["refresh_token_expires_at"],
+            path="/auth/refresh",
+        )
 
-        # Re-raise unknown exceptions
-        raise
+        return response
+
+    except ValueError as e:
+        status_code, detail = error_mappings.get(str(e), (500, "Unexpected error"))
+        raise HTTPException(status_code=status_code, detail=detail)

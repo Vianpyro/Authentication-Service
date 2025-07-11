@@ -3,11 +3,13 @@ from app.utility.database import get_db
 from app.utility.security.encryption import decrypt_field, encrypt_field
 from app.utility.security.hashing import hash_field
 from app.utility.security.mfa import verify_otp
-from app.utility.security.tokens import hash_token
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from app.utility.security.tokens import require_challenge_token
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 from pyotp import random_base32 as generate_otp_secret
 from sqlalchemy import text
-from sqlalchemy.exc import DBAPIError, IntegrityError
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ....schemas.totp_secret import TOTPSecretChallengeRequest, TOTPSecretSetupRequest, TOTPSecretSetupResponse
@@ -22,7 +24,12 @@ router = APIRouter()
     response_model=TOTPSecretSetupResponse,
     response_description="TOTP secret setup successful, returns TOTP secret and challenge token for confirmation",
 )
-async def setup_totp_secret(request_body: TOTPSecretSetupRequest, request: Request, db: AsyncSession = Depends(get_db)):
+async def setup_totp_secret(
+    request_body: TOTPSecretSetupRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    # user_session=Depends(require_access_token),
+):
     """
     Setup TOTP secret for a user.
 
@@ -85,8 +92,8 @@ async def confirm_2fa(
     request_body: TOTPSecretChallengeRequest,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    authorization: str = Header(None, alias="Authorization"),
-    mfa_challenge: str = Header(None, alias="X-TOTP-Challenge"),
+    # user_session=Depends(require_access_token),
+    challenge_data=Depends(require_challenge_token),
 ):
     """
     Confirm 2FA for a user.
@@ -106,46 +113,7 @@ async def confirm_2fa(
     Raises:
         HTTPException: If confirmation fails or user is not found
     """
-    # Validate the presence of the Authorization header
-    # TODO: Use an actual authentication middleware to handle this
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header missing or invalid format",
-        )
-
-    # Extract the Bearer token from the Authorization header
-    access_token = authorization.split(" ", 1)[1]
-
-    # Extract the Bearer token from the X-TOTP-Challenge header
-    if not mfa_challenge or not mfa_challenge.startswith("Bearer "):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Challenge header missing or invalid format",
-        )
-
-    challenge_token = mfa_challenge.split(" ", 1)[1]
-
-    try:
-        result = await db.execute(
-            text("SELECT * FROM get_totp_secret(p_token_hash => :p_token_hash)"),
-            {"p_token_hash": hash_token(challenge_token)},
-        )
-        data = result.fetchone()
-    except DBAPIError as e:
-        if "TOTP token not found" in str(e):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="TOTP token not found or expired",
-            )
-
-    if not data or not data.secret_encrypted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="TOTP secret not found for user",
-        )
-
-    if not verify_otp(decrypt_field(data.secret_encrypted), request_body.code):
+    if not verify_otp(decrypt_field(challenge_data.secret_encrypted), request_body.code):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid TOTP code",
@@ -153,22 +121,43 @@ async def confirm_2fa(
 
     result = await db.execute(
         text("SELECT get_email_verification_status(p_app_id => :p_app_id, p_user_id => :p_user_id)"),
-        {"p_app_id": data.app_id, "p_user_id": data.user_id},
+        {"p_app_id": challenge_data.app_id, "p_user_id": challenge_data.user_id},
     )
     user_data = result.fetchone()
 
-    if user_data is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found",
-        )
-
     # Create session and refresh tokens for the opaque token flow
-    access_token, refresh_token = await create_login_session(data.user_id, db, data.app_id, request)
-    return UserLoginResponse(
-        access_token=access_token,
-        id=data.user_id,
-        is_email_verified=user_data[0],
-        is_2fa_enabled=True,
-        refresh_token=refresh_token,
+    session = await create_login_session(challenge_data.user_id, db, challenge_data.app_id, request)
+
+    # Create response
+    user_dict = user_data._asdict()
+    response_data = UserLoginResponse.model_validate(
+        {
+            **user_dict,
+            "is_2fa_enabled": True,
+            "id": challenge_data.user_id,
+            "is_email_verified": user_dict.get("get_email_verification_status", False),
+        }
+    ).model_dump()
+    response = JSONResponse(content=jsonable_encoder(response_data))
+
+    # Attach secure cookies
+    response.set_cookie(
+        key="access_token",
+        value=session["access_token"],
+        httponly=True,
+        secure=True,
+        samesite="Strict",
+        expires=session["access_token_expires_at"],
+        path="/",
     )
+    response.set_cookie(
+        key="refresh_token",
+        value=session["refresh_token"],
+        httponly=True,
+        secure=True,
+        samesite="Strict",
+        expires=session["refresh_token_expires_at"],
+        path="/auth/refresh",
+    )
+
+    return response

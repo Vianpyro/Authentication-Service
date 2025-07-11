@@ -42,42 +42,33 @@ def verify_token(token: str, stored_hash: bytes) -> bool:
     return hmac.compare_digest(hash_token(token), stored_hash)
 
 
-async def validate_access_token(token: str, db: AsyncSession) -> dict:
-    """Validate an access token by checking its hash in the database."""
-    try:
-        result = await db.execute(
-            text("SELECT * FROM get_access_token(p_token_hash => :p_token_hash)"),
-            {"p_token_hash": hash_token(token)},
-        )
-        data = result.fetchone()
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired access token",
-        ) from e
-
-    return data
-
-
 async def require_access_token(
     authorization: str = Header(..., alias="Authorization"),
     db: AsyncSession = Depends(get_db),
-) -> dict:
+):
     if not authorization.startswith("Bearer "):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid Authorization header format",
+            detail="Invalid authorization header format",
         )
-    token = authorization.removeprefix("Bearer ").strip()
 
-    user_session = await validate_access_token(token, db)
-    if not user_session:
+    token = authorization.removeprefix("Bearer ").strip()
+    token_hash = hash_token(token)
+
+    result = await db.execute(
+        text("SELECT * FROM get_access_token(p_token_hash => :p_token_hash)"),
+        {"p_token_hash": token_hash},
+    )
+
+    session = result.fetchone()
+
+    if not session:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired access token",
         )
-    return user_session
+
+    return session
 
 
 async def require_challenge_token(

@@ -5,13 +5,17 @@ This module provides reusable functions for creating login sessions, MFA challen
 and other authentication-related operations used across multiple endpoints.
 """
 
+from datetime import datetime
+
 from app.utility.security.tokens import create_token, hash_token
 from fastapi import Request
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
-async def create_login_session(user_id: int, db: AsyncSession, app_id: int, request: Request) -> tuple[str, str]:
+async def create_login_session(
+    user_id: int, db: AsyncSession, app_id: int, request: Request
+) -> dict[str, str | datetime]:
     """
     Create a session for the user and return session details.
 
@@ -25,15 +29,16 @@ async def create_login_session(user_id: int, db: AsyncSession, app_id: int, requ
         request: The HTTP request object to extract client information
 
     Returns:
-        tuple[str, str]: A tuple containing (access_token, refresh_token)
+        dict[str, str | datetime]: A dictionary containing access_token, refresh_token, access_token_expires_at, refresh_token_expires_at
     """
     access_token = create_token()
     refresh_token = create_token()
 
-    await db.execute(
+    result = await db.execute(
         text(
             """
-            CALL create_session (
+            SELECT access_token_expires_at, refresh_token_expires_at
+            FROM create_session (
                 p_app_id => :app_id,
                 p_user_id => :user_id,
                 p_access_token_hash => :access_token,
@@ -51,9 +56,15 @@ async def create_login_session(user_id: int, db: AsyncSession, app_id: int, requ
             "user_agent": request.headers.get("user-agent", ""),
         },
     )
+    data = result.fetchone()
     await db.commit()
 
-    return access_token, refresh_token
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "access_token_expires_at": data.access_token_expires_at,
+        "refresh_token_expires_at": data.refresh_token_expires_at,
+    }
 
 
 async def create_mfa_challenge_session(user_id: int, db: AsyncSession, app_id: int, request: Request) -> str:
