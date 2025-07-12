@@ -3,7 +3,7 @@ Test the home endpoint of the API.
 """
 
 import pytest
-from app.routes.home import router as home_router
+from app.routers.home import router as home_router
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 

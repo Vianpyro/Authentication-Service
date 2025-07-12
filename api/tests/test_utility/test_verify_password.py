@@ -1,5 +1,5 @@
 import pytest
-from app.utility.security.password import hash_password, verify_password
+from app.utils.security.password import hash_password, verify_password
 from argon2 import PasswordHasher
 
 ph = PasswordHasher()

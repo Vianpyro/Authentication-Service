@@ -42,7 +42,7 @@ api/
    ```
 
 2. **Set up environment variables:**
-   - The API uses the database connection configured in [`app.utility.database`](app/utility/database.py)
+   - The API uses the database connection configured in [`app.utils.database`](app/utility/database.py)
    - Default connection: `postgresql+asyncpg://vscode@0.0.0.0:5432/authentication-service`
 
 ### Running the API
@@ -145,7 +145,7 @@ The API connects to PostgreSQL using:
 Database session management is handled through the [`get_db`](app/utility/database.py) dependency:
 
 ```python
-from app.utility.database import get_db
+from app.utils.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 
 async def my_endpoint(db: AsyncSession = Depends(get_db)):

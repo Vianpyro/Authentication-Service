@@ -24,7 +24,7 @@ Security Features:
 
 from uuid import UUID
 
-from app.utility.database import get_db
+from app.utils.database import get_db
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession

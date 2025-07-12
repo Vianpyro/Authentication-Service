@@ -12,7 +12,7 @@ import hmac
 import os
 import secrets
 
-from app.utility.database import get_db
+from app.utils.database import get_db
 from dotenv import load_dotenv
 from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy import text
