@@ -68,6 +68,16 @@ Authentication-Service/
    # API Configuration
    API_PORT=8000
 
+   # Security Configuration
+   AES_SECRET_KEY=your_32_character_secret_key_here
+   PASSWORD_PEPPER=your_random_password_pepper_here
+   TOKEN_PEPPER=your_random_token_pepper_here
+
+   # Mail Configuration
+   MAIL_USERNAME=your_email@domain.com
+   MAIL_PASSWORD=your_email_password_or_app_password
+   MAIL_SERVER=smtp.gmail.com
+
    # Constructed URLs (optional - can be built in compose file)
    DATABASE_URL=postgresql+asyncpg://postgres:${DB_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
    ```
