@@ -109,10 +109,11 @@ class AppUpdate(BaseModel):
     """Schema for updating application details."""
 
     app_id: AppFieldTypes.Id
+    is_active: AppFieldTypes.IsActive = True
+    new_description: AppFieldTypes.Description | None = None
     new_name: AppFieldTypes.AppName | None = None
     new_slug: AppFieldTypes.Slug | None = None
-    new_description: AppFieldTypes.Description | None = None
-    is_active: AppFieldTypes.IsActive = True
+    new_status: AppFieldTypes.IsActive | None = None
 
 
 class AppUpdateResponse(BaseModel):
