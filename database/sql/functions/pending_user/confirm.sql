@@ -71,4 +71,4 @@ END;
 $$
 LANGUAGE plpgsql;
 
-GRANT EXECUTE ON FUNCTION delete_application TO api;
+GRANT EXECUTE ON FUNCTION confirm_pending_user TO api;

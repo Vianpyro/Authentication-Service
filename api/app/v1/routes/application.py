@@ -8,7 +8,6 @@ from ..controllers.application import ApplicationController
 from ..schemas.application import (
     AppCreate,
     AppCreateResponse,
-    AppDelete,
     AppDeleteResponse,
     AppGetResponse,
     AppUpdate,
@@ -36,7 +35,7 @@ async def update_application(payload: AppUpdate, db: AsyncSession = Depends(get_
     return await controller.update_application(payload)
 
 
-@router.delete("", response_model=AppDeleteResponse)
-async def delete_application(payload: AppDelete, db: AsyncSession = Depends(get_db)):
+@router.delete("/{app_id}", response_model=AppDeleteResponse)
+async def delete_application(app_id: UUID, db: AsyncSession = Depends(get_db)):
     controller = ApplicationController(db)
-    return await controller.delete_application(payload)
+    return await controller.delete_application(app_id)

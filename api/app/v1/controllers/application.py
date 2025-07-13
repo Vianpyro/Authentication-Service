@@ -6,7 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..schemas.application import (
     AppCreate,
     AppCreateResponse,
-    AppDelete,
     AppDeleteResponse,
     AppGetResponse,
     AppUpdate,
@@ -61,10 +60,8 @@ class ApplicationController(BaseController):
         await self.db.commit()
         return AppUpdateResponse.model_validate(row)
 
-    async def delete_application(self, payload: AppDelete) -> AppDeleteResponse:
-        result = await self.db.execute(
-            text("SELECT delete_application(p_app_id => :app_id, p_slug => :slug)"), payload.model_dump()
-        )
+    async def delete_application(self, app_id: UUID) -> AppDeleteResponse:
+        result = await self.db.execute(text("SELECT delete_application(p_app_id => :app_id)"), {"app_id": app_id})
         name = result.scalar_one_or_none()
         if name is None:
             self.handle_not_found("Application")
