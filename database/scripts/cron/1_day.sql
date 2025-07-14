@@ -2,12 +2,10 @@
 DELETE FROM pending_users
 WHERE expires_at <= current_timestamp;
 
-DELETE FROM sessions
-WHERE
-    expires_at <= current_timestamp
-    AND is_active = FALSE;
+DELETE FROM tokens
+WHERE expires_at <= current_timestamp;
 
-DELETE FROM password_reset_tokens
+DELETE FROM api_keys
 WHERE expires_at <= current_timestamp;
 
 -- Cron job to delete users scheduled for deletion after 90 days
@@ -45,7 +43,7 @@ DELETE FROM totp_secrets
 WHERE user_id IN (SELECT id FROM sanitized_users_ids);
 DELETE FROM sessions
 WHERE user_id IN (SELECT id FROM sanitized_users_ids);
-DELETE FROM password_reset_tokens
+DELETE FROM tokens
 WHERE user_id IN (SELECT id FROM sanitized_users_ids);
 DELETE FROM device_fingerprints
 WHERE user_id IN (SELECT id FROM sanitized_users_ids);

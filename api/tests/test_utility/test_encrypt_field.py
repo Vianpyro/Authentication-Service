@@ -1,7 +1,7 @@
 import re
 
 import pytest
-from app.utility.security import decrypt_field, encrypt_field
+from app.utility.security.encryption import decrypt_field, encrypt_field
 
 
 @pytest.fixture

@@ -5,6 +5,9 @@ This module provides Pydantic schemas for validating pending user-related data,
 such as user requests and responses.
 """
 
+import os
+import random
+import zoneinfo
 from typing import Annotated
 
 from pydantic import BaseModel, Field
@@ -40,12 +43,28 @@ class RegisterRequest(BaseModel):
         ),
     ]
 
+    timezone: Annotated[
+        str,
+        Field(
+            title="Timezone",
+            pattern=r"^[a-zA-Z/_-]+$",
+            description="The timezone of the user, used for formatting expiration times.",
+            min_length=1,
+            max_length=50,
+            example=(
+                random.choice(sorted(zoneinfo.available_timezones()))
+                if os.name == "posix"
+                else "America/New_York"
+            ),
+            default="UTC",
+        ),
+    ]
+
 
 class RegisterConfirmationRequest(BaseModel):
     """Schema for confirming a pending user registration."""
 
     app_id: PendingUserTypes.AppId
-    token: PendingUserTypes.Token
     password: UserFieldTypes.Password
 
 

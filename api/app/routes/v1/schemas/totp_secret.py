@@ -9,6 +9,7 @@ from random import randint
 from typing import Annotated
 
 from pydantic import BaseModel, Field
+from pyotp import random_base32 as generate_otp_secret
 
 from .application import AppFieldTypes
 from .common import CommonFieldTypes
@@ -40,14 +41,38 @@ class TOTPSecretFieldTypes:
 class TOTPSecretChallengeRequest(BaseModel):
     """Schema for TOTP secret challenge request."""
 
-    app_id: AppFieldTypes.Id
-    token: CommonFieldTypes.Token
     code: Annotated[
-        int,
+        str,
         Field(
             description="The TOTP code provided by the user.",
-            example=randint(100_000, 999_999),
-            ge=100_000,
-            le=999_999,
+            min_length=6,
+            max_length=6,
+            pattern=r"^\d{6}$",
+            example=str(randint(100_000, 999_999)),
+        ),
+    ]
+
+
+class TOTPSecretSetupRequest(BaseModel):
+    """Schema for TOTP secret setup request."""
+
+    app_id: AppFieldTypes.Id
+    user_id: UserFieldTypes.Id
+
+
+class TOTPSecretSetupResponse(BaseModel):
+    """Schema for TOTP secret setup response."""
+
+    challenge_token: CommonFieldTypes.Token
+
+    secret: Annotated[
+        str,
+        Field(
+            title="TOTP Secret",
+            min_length=32,
+            max_length=32,
+            pattern=r"^[A-Z2-7]+=*$",
+            description="The TOTP secret key for the user.",
+            example=generate_otp_secret(),
         ),
     ]

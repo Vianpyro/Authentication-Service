@@ -11,8 +11,7 @@ RETURNS TABLE (
     description TEXT,
     is_active BOOLEAN,
     updated_at TIMESTAMPTZ
-)
-AS $$
+) AS $$
 BEGIN
     RETURN QUERY
     UPDATE applications a

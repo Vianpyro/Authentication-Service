@@ -6,8 +6,7 @@ CREATE OR REPLACE FUNCTION register_pending_user(
     p_ip_address INET,
     p_user_agent TEXT
 ) RETURNS TIMESTAMPTZ
-LANGUAGE plpgsql
-AS $$
+LANGUAGE plpgsql AS $$
 DECLARE
     v_token_id INTEGER;
     v_expires_at TIMESTAMPTZ;

@@ -24,7 +24,12 @@ Security Features:
 
 from uuid import UUID
 
-from app.routes.v1.schemas.application import (
+from app.utility.database import get_db
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from ..schemas.application import (
     AppCreate,
     AppCreateResponse,
     AppDelete,
@@ -33,10 +38,6 @@ from app.routes.v1.schemas.application import (
     AppUpdate,
     AppUpdateResponse,
 )
-from app.utility.database import get_db
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
@@ -71,7 +72,9 @@ async def get_applications(app_id: UUID, db: AsyncSession = Depends(get_db)):
         HTTPException:
             - 404 Not Found: Application with specified ID does not exist
     """
-    result = await db.execute(text("SELECT * FROM get_application(p_app_id => :app_id)"), {"app_id": app_id})
+    result = await db.execute(
+        text("SELECT * FROM get_application(p_app_id => :app_id)"), {"app_id": app_id}
+    )
 
     data = result.fetchone()
     if data is None:
@@ -89,7 +92,9 @@ async def get_applications(app_id: UUID, db: AsyncSession = Depends(get_db)):
     response_model=AppCreateResponse,
     response_description="Application registered successfully",
 )
-async def register_application(application: AppCreate, db: AsyncSession = Depends(get_db)):
+async def register_application(
+    request_body: AppCreate, db: AsyncSession = Depends(get_db)
+):
     """
     Register a new application in the authentication system.
 
@@ -115,11 +120,13 @@ async def register_application(application: AppCreate, db: AsyncSession = Depend
         - Atomic database operations
     """
     result = await db.execute(
-        text("SELECT register_application(p_name => :name, p_slug => :slug, p_description => :description)"),
+        text(
+            "SELECT register_application(p_name => :name, p_slug => :slug, p_description => :description)"
+        ),
         {
-            "name": application.name,
-            "slug": application.slug,
-            "description": application.description,
+            "name": request_body.name,
+            "slug": request_body.slug,
+            "description": request_body.description,
         },
     )
     app_id = result.scalar()
@@ -133,7 +140,9 @@ async def register_application(application: AppCreate, db: AsyncSession = Depend
     response_model=AppUpdateResponse,
     response_description="Application updated successfully",
 )
-async def update_application(application: AppUpdate, db: AsyncSession = Depends(get_db)):
+async def update_application(
+    request_body: AppUpdate, db: AsyncSession = Depends(get_db)
+):
     """
     Update an existing application's metadata and status.
 
@@ -159,7 +168,11 @@ async def update_application(application: AppUpdate, db: AsyncSession = Depends(
         - Unique slug constraint enforcement
         - Atomic database operations
     """
-    if not application.new_name and not application.new_slug and not application.new_description:
+    if (
+        not request_body.new_name
+        and not request_body.new_slug
+        and not request_body.new_description
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="At least one field must be updated",
@@ -177,11 +190,11 @@ async def update_application(application: AppUpdate, db: AsyncSession = Depends(
             )"""
         ),
         {
-            "app_id": application.app_id,
-            "new_name": application.new_name,
-            "new_slug": application.new_slug,
-            "new_description": application.new_description,
-            "new_status": application.is_active,
+            "app_id": request_body.app_id,
+            "new_name": request_body.new_name,
+            "new_slug": request_body.new_slug,
+            "new_description": request_body.new_description,
+            "new_status": request_body.is_active,
         },
     )
     app_details = result.fetchone()
@@ -208,7 +221,9 @@ async def update_application(application: AppUpdate, db: AsyncSession = Depends(
     response_model=AppDeleteResponse,
     response_description="Application deleted successfully",
 )
-async def delete_application(application: AppDelete, db: AsyncSession = Depends(get_db)):
+async def delete_application(
+    request_body: AppDelete, db: AsyncSession = Depends(get_db)
+):
     """
     Delete an application from the authentication system.
 
@@ -238,10 +253,10 @@ async def delete_application(application: AppDelete, db: AsyncSession = Depends(
     """
     result = await db.execute(
         text("SELECT delete_application(p_app_id => :app_id, p_slug => :slug)"),
-        {"app_id": application.app_id, "slug": application.slug},
+        {"app_id": request_body.app_id, "slug": request_body.slug},
     )
 
-    name = result.scalar()
+    name = result.scalar_one_or_none()
     if name is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

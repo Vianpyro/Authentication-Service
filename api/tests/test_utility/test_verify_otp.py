@@ -1,7 +1,6 @@
 import pyotp
 import pytest
-
-from app.utility.security import verify_otp
+from app.utility.security.mfa import verify_otp
 
 
 @pytest.fixture

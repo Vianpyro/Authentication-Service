@@ -6,8 +6,7 @@ CREATE OR REPLACE PROCEDURE create_mfa_challenge_session(
     -- p_device_name TEXT,
     p_ip_address INET,
     p_user_agent TEXT
-)
-AS $$
+) AS $$
 DECLARE
     v_challenge_token_id INTEGER;
     v_device_fingerprint_id UUID;

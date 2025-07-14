@@ -9,7 +9,7 @@ from random import choice
 from string import ascii_letters
 from typing import Annotated
 
-from app.utility.security import hash_password, validate_password_complexity
+from app.utility.security.password import hash_password, validate_password_complexity
 from pydantic import AfterValidator, BaseModel, Field
 
 from .application import AppFieldTypes
@@ -117,8 +117,6 @@ class UserLoginResponse(BaseModel):
     id: UserFieldTypes.Id
     is_email_verified: UserFieldTypes.IsEmailVerified
     is_2fa_enabled: UserFieldTypes.Is2FAEnabled
-    session_token: CommonFieldTypes.Token
-    refresh_token: CommonFieldTypes.Token
 
     class Config:
         from_attributes = True

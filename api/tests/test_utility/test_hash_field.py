@@ -1,7 +1,7 @@
 import re
 
 import pytest
-from app.utility.security import hash_email, hash_field
+from app.utility.security.hashing import hash_email, hash_field
 
 
 @pytest.fixture

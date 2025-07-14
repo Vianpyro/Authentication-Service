@@ -3,8 +3,7 @@ CREATE OR REPLACE FUNCTION register_application(
     p_slug TEXT,
     p_description TEXT DEFAULT NULL
 )
-RETURNS UUID
-AS $$
+RETURNS UUID AS $$
 DECLARE
     v_app_id UUID;
 BEGIN
