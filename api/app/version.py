@@ -4,4 +4,4 @@ This module defines the version of the application.
 It is used to track changes and updates to the codebase.
 """
 
-__version__ = "0.3.2"
+__version__ = "0.4.0"
