@@ -39,12 +39,12 @@ async def create_login_session(
             """
             SELECT access_token_expires_at, refresh_token_expires_at
             FROM create_session (
-                p_app_id => :app_id,
-                p_user_id => :user_id,
-                p_access_token_hash => :access_token_hash,
-                p_refresh_token_hash => :refresh_token_hash,
-                p_ip_address => :ip_address,
-                p_user_agent => :user_agent
+                p_app_id := :app_id,
+                p_user_id := :user_id,
+                p_access_token_hash := :access_token_hash,
+                p_refresh_token_hash := :refresh_token_hash,
+                p_ip_address := :ip_address,
+                p_user_agent := :user_agent
             )"""
         ),
         {
@@ -88,11 +88,11 @@ async def create_mfa_challenge_session(user_id: int, db: AsyncSession, app_id: i
         text(
             """
             CALL create_mfa_challenge_session (
-                p_app_id => :app_id,
-                p_user_id => :user_id,
-                p_challenge_token_hash => :challenge_token_hash,
-                p_ip_address => :ip_address,
-                p_user_agent => :user_agent
+                p_app_id := :app_id,
+                p_user_id := :user_id,
+                p_challenge_token_hash := :challenge_token_hash,
+                p_ip_address := :ip_address,
+                p_user_agent := :user_agent
             )"""
         ),
         {

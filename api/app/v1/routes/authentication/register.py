@@ -91,12 +91,12 @@ async def register_pending_user(
             text(
                 """
                 SELECT register_pending_user(
-                    p_app_id => :app_id,
-                    p_token_hash => :token_hash,
-                    p_email_encrypted => :email_encrypted,
-                    p_email_hash => :email_hash,
-                    p_ip_address => :ip_address,
-                    p_user_agent => :user_agent
+                    p_app_id := :app_id,
+                    p_token_hash := :token_hash,
+                    p_email_encrypted := :email_encrypted,
+                    p_email_hash := :email_hash,
+                    p_ip_address := :ip_address,
+                    p_user_agent := :user_agent
                 )
                 """
             ),

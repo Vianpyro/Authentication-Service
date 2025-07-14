@@ -72,10 +72,10 @@ async def login_user(request_body: UserLoginRequest, request: Request, db: Async
             text(
                 """
                 SELECT * FROM login_user (
-                    p_app_id => :app_id,
-                    p_email_hash => :email_hash,
-                    p_ip_address => :ip_address,
-                    p_user_agent => :user_agent
+                    p_app_id := :app_id,
+                    p_email_hash := :email_hash,
+                    p_ip_address := :ip_address,
+                    p_user_agent := :user_agent
                 )"""
             ),
             {

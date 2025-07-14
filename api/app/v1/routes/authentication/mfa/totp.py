@@ -52,10 +52,10 @@ async def setup_totp_secret(
         await db.execute(
             text(
                 """CALL insert_totp_secret(
-                    p_user_id => :user_id,
-                    p_secret_encrypted => :secret_encrypted,
-                    p_secret_hash => :secret_hash,
-                    p_key_version => :key_version
+                    p_user_id := :user_id,
+                    p_secret_encrypted := :secret_encrypted,
+                    p_secret_hash := :secret_hash,
+                    p_key_version := :key_version
                 )"""
             ),
             {
@@ -120,7 +120,7 @@ async def confirm_2fa(
 
     result = await db.execute(
         text(
-            "SELECT get_email_verification_status(p_app_id => :p_app_id, p_user_id => :p_user_id) AS is_email_verified"
+            "SELECT get_email_verification_status(p_app_id := :p_app_id, p_user_id := :p_user_id) AS is_email_verified"
         ),
         {"p_app_id": challenge_data.app_id, "p_user_id": challenge_data.user_id},
     )
