@@ -1,12 +1,11 @@
 from app.utility.authentication import create_login_session, create_mfa_challenge_session
 from app.utility.database import get_db
+from app.utility.response import create_login_response_with_cookies
 from app.utility.security.encryption import decrypt_field, encrypt_field
 from app.utility.security.hashing import hash_field
 from app.utility.security.mfa import verify_otp
 from app.utility.security.tokens import require_access_token, require_challenge_token
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
 from pyotp import random_base32 as generate_otp_secret
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
@@ -138,26 +137,5 @@ async def confirm_2fa(
             "id": challenge_data.user_id,
         }
     ).model_dump()
-    response = JSONResponse(content=jsonable_encoder(response_data))
 
-    # Attach secure cookies
-    response.set_cookie(
-        key="access_token",
-        value=session["access_token"],
-        httponly=True,
-        secure=True,
-        samesite="Strict",
-        expires=session["access_token_expires_at"],
-        path="/",
-    )
-    response.set_cookie(
-        key="refresh_token",
-        value=session["refresh_token"],
-        httponly=True,
-        secure=True,
-        samesite="Strict",
-        expires=session["refresh_token_expires_at"],
-        path="/auth/refresh",
-    )
-
-    return response
+    return create_login_response_with_cookies(response_data, session)

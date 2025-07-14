@@ -13,11 +13,10 @@ Users are the primary entities that interact with applications, and this module 
 
 from app.utility.authentication import create_login_session, create_mfa_challenge_session
 from app.utility.database import get_db
+from app.utility.response import create_login_response_with_cookies
 from app.utility.security.hashing import hash_email
 from app.utility.security.password import verify_password
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -29,7 +28,6 @@ router = APIRouter()
 @router.post(
     "",
     status_code=status.HTTP_200_OK,
-    # response_model=Union[UserLoginResponse, UserLogin2faResponse],
     response_description="User logged in successfully",
 )
 async def login_user(request_body: UserLoginRequest, request: Request, db: AsyncSession = Depends(get_db)):
@@ -106,29 +104,7 @@ async def login_user(request_body: UserLoginRequest, request: Request, db: Async
 
         # Create response without tokens in body
         response_data = UserLoginResponse.model_validate(user_dict).model_dump()
-        response = JSONResponse(content=jsonable_encoder(response_data))
-
-        # Attach secure cookies
-        response.set_cookie(
-            key="access_token",
-            value=session["access_token"],
-            httponly=True,
-            secure=True,
-            samesite="Strict",
-            expires=session["access_token_expires_at"],
-            path="/",
-        )
-        response.set_cookie(
-            key="refresh_token",
-            value=session["refresh_token"],
-            httponly=True,
-            secure=True,
-            samesite="Strict",
-            expires=session["refresh_token_expires_at"],
-            path="/auth/refresh",
-        )
-
-        return response
+        return create_login_response_with_cookies(response_data, session)
 
     except ValueError as e:
         status_code, detail = error_mappings.get(str(e), (500, "Unexpected error"))
