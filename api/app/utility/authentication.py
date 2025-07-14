@@ -29,7 +29,7 @@ async def create_login_session(
         request: The HTTP request object to extract client information
 
     Returns:
-        dict[str, str | datetime]: A dictionary containing access_token, refresh_token, access_token_expires_at, refresh_token_expires_at
+        dict[str, str | datetime]: A dictionary containing session tokens and their expiration dates.
     """
     access_token = create_token()
     refresh_token = create_token()

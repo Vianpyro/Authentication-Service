@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from .routes.application import router as application_router
 from .routes.authentication import router as authentication
 
-__version__ = "0.1.2"
+__version__ = "0.2.1"
 
 api = FastAPI(title="Authentication API", version=__version__)
 
