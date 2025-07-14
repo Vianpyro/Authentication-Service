@@ -8,7 +8,7 @@ from .endpoints.application import router as application_router
 from .endpoints.authentication.login import router as user_authentication
 from .endpoints.authentication.register import router as user_registration
 
-__version__ = "0.2.3"
+__version__ = "0.2.0"
 
 api = FastAPI(title="Authentication API", version=__version__)
 
