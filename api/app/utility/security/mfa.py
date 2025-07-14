@@ -1,7 +1,9 @@
 import pyotp
 
 
-def verify_otp(secret: str, otp_code: str, method: str = "TOTP", counter: int = 0) -> bool:
+def verify_otp(
+    secret: str, otp_code: str, method: str = "TOTP", counter: int = 0
+) -> bool:
     """Verify a one-time password (TOTP or HOTP)."""
     try:
         if method == "TOTP":

@@ -1,4 +1,7 @@
-from app.utility.authentication import create_login_session, create_mfa_challenge_session
+from app.utility.authentication import (
+    create_login_session,
+    create_mfa_challenge_session,
+)
 from app.utility.database import get_db
 from app.utility.response import create_login_response_with_cookies
 from app.utility.security.encryption import decrypt_field, encrypt_field
@@ -11,7 +14,11 @@ from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ....schemas.totp_secret import TOTPSecretChallengeRequest, TOTPSecretSetupRequest, TOTPSecretSetupResponse
+from ....schemas.totp_secret import (
+    TOTPSecretChallengeRequest,
+    TOTPSecretSetupRequest,
+    TOTPSecretSetupResponse,
+)
 from ....schemas.user import UserLoginResponse
 
 router = APIRouter()
@@ -76,7 +83,9 @@ async def setup_totp_secret(
 
     # TODO: Generate the QR code URL and QR code for the user to scan
     # otpauth://totp/AppName:UserEmail?secret=otp_secret&issuer=AppName
-    mfa_access_token = await create_mfa_challenge_session(request_body.user_id, db, request_body.app_id, request)
+    mfa_access_token = await create_mfa_challenge_session(
+        request_body.user_id, db, request_body.app_id, request
+    )
 
     return TOTPSecretSetupResponse(secret=otp_secret, challenge_token=mfa_access_token)
 
@@ -112,7 +121,9 @@ async def confirm_2fa(
     Raises:
         HTTPException: If confirmation fails or user is not found
     """
-    if not verify_otp(decrypt_field(challenge_data.secret_encrypted), request_body.code):
+    if not verify_otp(
+        decrypt_field(challenge_data.secret_encrypted), request_body.code
+    ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid TOTP code",
@@ -127,7 +138,9 @@ async def confirm_2fa(
     user_data = result.fetchone()
 
     # Create session and refresh tokens for the opaque token flow
-    session = await create_login_session(challenge_data.user_id, db, challenge_data.app_id, request)
+    session = await create_login_session(
+        challenge_data.user_id, db, challenge_data.app_id, request
+    )
 
     # Create response
     response_data = UserLoginResponse.model_validate(

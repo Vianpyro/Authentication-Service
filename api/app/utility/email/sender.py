@@ -31,4 +31,6 @@ def send_email_background(background_tasks: BackgroundTasks, email: BaseEmailSch
         subtype=MessageType.html,
     )
     fm = FastMail(conf)
-    background_tasks.add_task(fm.send_message, message, template_name=email.template_path)
+    background_tasks.add_task(
+        fm.send_message, message, template_name=email.template_path
+    )

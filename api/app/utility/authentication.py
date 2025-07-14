@@ -67,7 +67,9 @@ async def create_login_session(
     }
 
 
-async def create_mfa_challenge_session(user_id: int, db: AsyncSession, app_id: int, request: Request) -> str:
+async def create_mfa_challenge_session(
+    user_id: int, db: AsyncSession, app_id: int, request: Request
+) -> str:
     """
     Create a multi-factor authentication (MFA) challenge session for the user.
 

@@ -72,7 +72,9 @@ async def get_applications(app_id: UUID, db: AsyncSession = Depends(get_db)):
         HTTPException:
             - 404 Not Found: Application with specified ID does not exist
     """
-    result = await db.execute(text("SELECT * FROM get_application(p_app_id => :app_id)"), {"app_id": app_id})
+    result = await db.execute(
+        text("SELECT * FROM get_application(p_app_id => :app_id)"), {"app_id": app_id}
+    )
 
     data = result.fetchone()
     if data is None:
@@ -90,7 +92,9 @@ async def get_applications(app_id: UUID, db: AsyncSession = Depends(get_db)):
     response_model=AppCreateResponse,
     response_description="Application registered successfully",
 )
-async def register_application(request_body: AppCreate, db: AsyncSession = Depends(get_db)):
+async def register_application(
+    request_body: AppCreate, db: AsyncSession = Depends(get_db)
+):
     """
     Register a new application in the authentication system.
 
@@ -116,7 +120,9 @@ async def register_application(request_body: AppCreate, db: AsyncSession = Depen
         - Atomic database operations
     """
     result = await db.execute(
-        text("SELECT register_application(p_name => :name, p_slug => :slug, p_description => :description)"),
+        text(
+            "SELECT register_application(p_name => :name, p_slug => :slug, p_description => :description)"
+        ),
         {
             "name": request_body.name,
             "slug": request_body.slug,
@@ -134,7 +140,9 @@ async def register_application(request_body: AppCreate, db: AsyncSession = Depen
     response_model=AppUpdateResponse,
     response_description="Application updated successfully",
 )
-async def update_application(request_body: AppUpdate, db: AsyncSession = Depends(get_db)):
+async def update_application(
+    request_body: AppUpdate, db: AsyncSession = Depends(get_db)
+):
     """
     Update an existing application's metadata and status.
 
@@ -160,7 +168,11 @@ async def update_application(request_body: AppUpdate, db: AsyncSession = Depends
         - Unique slug constraint enforcement
         - Atomic database operations
     """
-    if not request_body.new_name and not request_body.new_slug and not request_body.new_description:
+    if (
+        not request_body.new_name
+        and not request_body.new_slug
+        and not request_body.new_description
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="At least one field must be updated",
@@ -209,7 +221,9 @@ async def update_application(request_body: AppUpdate, db: AsyncSession = Depends
     response_model=AppDeleteResponse,
     response_description="Application deleted successfully",
 )
-async def delete_application(request_body: AppDelete, db: AsyncSession = Depends(get_db)):
+async def delete_application(
+    request_body: AppDelete, db: AsyncSession = Depends(get_db)
+):
     """
     Delete an application from the authentication system.
 

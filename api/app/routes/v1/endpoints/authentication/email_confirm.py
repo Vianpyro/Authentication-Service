@@ -5,7 +5,10 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...schemas.pending_user import RegisterConfirmationRequest, RegisterConfirmationResponse
+from ...schemas.pending_user import (
+    RegisterConfirmationRequest,
+    RegisterConfirmationResponse,
+)
 
 router = APIRouter()
 MIN_RESPONSE_TIME_SECONDS = 0.45
