@@ -69,7 +69,7 @@ jobs:
               if [ ${#CHANGED_COMPONENTS[@]} -eq 0 ]; then
                 COMPONENTS='[]'
               else
-                COMPONENTS=$(printf '"%s"\n' "${CHANGED_COMPONENTS[@]}" | jq -s .)
+                COMPONENTS=$(printf '%s\n' "${CHANGED_COMPONENTS[@]}" | jq -R . | jq -s .)
               fi
             fi
           fi
