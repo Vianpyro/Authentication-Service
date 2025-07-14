@@ -124,7 +124,7 @@ async def confirm_2fa(
         ),
         {"p_app_id": challenge_data.app_id, "p_user_id": challenge_data.user_id},
     )
-    user_data = result.fetchone()
+    user_data = result.mappings().first()
 
     # Create session and refresh tokens for the opaque token flow
     session = await create_login_session(challenge_data.user_id, db, challenge_data.app_id, request)
@@ -132,7 +132,7 @@ async def confirm_2fa(
     # Create response
     response_data = UserLoginResponse.model_validate(
         {
-            **user_data._asdict(),
+            **user_data,
             "is_2fa_enabled": True,
             "id": challenge_data.user_id,
         }

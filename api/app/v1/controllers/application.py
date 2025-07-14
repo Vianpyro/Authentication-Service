@@ -54,7 +54,7 @@ class ApplicationController(BaseController):
             ),
             payload.model_dump(),
         )
-        row = result.fetchone()
+        row = result.mappings().first()
         if not row:
             self.handle_not_found("Application")
         await self.db.commit()

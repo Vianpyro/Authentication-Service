@@ -60,7 +60,7 @@ async def require_access_token(
         {"p_token_hash": token_hash},
     )
 
-    session = result.fetchone()
+    session = result.mappings().first()
 
     if not session:
         raise HTTPException(
@@ -86,7 +86,7 @@ async def require_challenge_token(
         text("SELECT * FROM get_totp_secret(p_token_hash := :p_token_hash)"),
         {"p_token_hash": hash_token(token)},
     )
-    data = result.fetchone()
+    data = result.mappings().first()
 
     if not data:
         raise HTTPException(

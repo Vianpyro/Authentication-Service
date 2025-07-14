@@ -85,7 +85,7 @@ async def login_user(request_body: UserLoginRequest, request: Request, db: Async
                 "user_agent": request.headers.get("user-agent", ""),
             },
         )
-        data = result.fetchone()
+        data = result.mappings().first()
 
         if not data:
             raise ValueError("User not found with specified email")

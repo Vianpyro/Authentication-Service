@@ -56,7 +56,7 @@ async def create_login_session(
             "user_agent": request.headers.get("user-agent", ""),
         },
     )
-    data = result.fetchone()
+    data = result.mappings().first()
     await db.commit()
 
     return {
