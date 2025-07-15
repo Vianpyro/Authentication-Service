@@ -24,13 +24,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Verify configuration file exists
-        run: |
-          echo "Contents of workspace root:"
-          ls -la
-          echo "Black config file contents:"
-          cat .python-black
-
       - name: Run Super Linter
         uses: super-linter/super-linter/slim@v7
         env:
