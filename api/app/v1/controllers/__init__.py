@@ -5,5 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from .application import ApplicationController
 
 
-def get_application_controller(db: AsyncSession = Depends(get_db)) -> ApplicationController:
+def get_application_controller(
+    db: AsyncSession = Depends(get_db),
+) -> ApplicationController:
     return ApplicationController(db)

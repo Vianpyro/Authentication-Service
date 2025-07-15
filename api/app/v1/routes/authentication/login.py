@@ -11,7 +11,10 @@ Users are the primary entities that interact with applications, and this module 
 
 # from typing import Union
 
-from app.utility.authentication import create_login_session, create_mfa_challenge_session
+from app.utility.authentication import (
+    create_login_session,
+    create_mfa_challenge_session,
+)
 from app.utility.database import get_db
 from app.utility.response import create_login_response_with_cookies
 from app.utility.security.hashing import hash_email
@@ -31,7 +34,9 @@ router = APIRouter()
     # response_model=Union[UserLoginResponse, UserLogin2faResponse],
     response_description="User logged in successfully",
 )
-async def login_user(request_body: UserLoginRequest, request: Request, db: AsyncSession = Depends(get_db)):
+async def login_user(
+    request_body: UserLoginRequest, request: Request, db: AsyncSession = Depends(get_db)
+):
     """
     Log in a user with email and password.
 
@@ -96,7 +101,9 @@ async def login_user(request_body: UserLoginRequest, request: Request, db: Async
         user_dict = dict(data._mapping) if hasattr(data, "_mapping") else dict(data)
 
         if data.is_2fa_enabled:
-            mfa_access_token = await create_mfa_challenge_session(data.id, db, request_body.app_id, request)
+            mfa_access_token = await create_mfa_challenge_session(
+                data.id, db, request_body.app_id, request
+            )
             user_dict.update({"challenge_token": mfa_access_token})
             return UserLogin2faResponse.model_validate(user_dict)
 
