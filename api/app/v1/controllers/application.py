@@ -21,9 +21,7 @@ class ApplicationController(BaseController):
         super().__init__(db)
 
     async def get_application_by_id(self, app_id: UUID) -> AppGetResponse:
-        result = await self.db.execute(
-            text("SELECT * FROM get_application(:app_id)").bindparams(app_id=app_id)
-        )
+        result = await self.db.execute(text("SELECT * FROM get_application(:app_id)").bindparams(app_id=app_id))
         row = result.mappings().first()
         if row is None:
             self.handle_not_found("Application")
@@ -31,9 +29,7 @@ class ApplicationController(BaseController):
 
     async def create_application(self, payload: AppCreate) -> AppCreateResponse:
         result = await self.db.execute(
-            text(
-                "SELECT register_application(p_name := :name, p_slug := :slug, p_description := :description)"
-            ),
+            text("SELECT register_application(p_name := :name, p_slug := :slug, p_description := :description)"),
             payload.model_dump(),
         )
         app_id = result.scalar()
@@ -53,8 +49,7 @@ class ApplicationController(BaseController):
                     p_new_slug := :new_slug,
                     p_new_description := :new_description,
                     p_new_status := :new_status
-                )
-            """
+                )"""
             ),
             payload.model_dump(),
         )
@@ -65,9 +60,7 @@ class ApplicationController(BaseController):
         return AppUpdateResponse.model_validate(row)
 
     async def delete_application(self, app_id: UUID) -> AppDeleteResponse:
-        result = await self.db.execute(
-            text("SELECT delete_application(p_app_id := :app_id)"), {"app_id": app_id}
-        )
+        result = await self.db.execute(text("SELECT delete_application(p_app_id := :app_id)"), {"app_id": app_id})
         name = result.scalar_one_or_none()
         if name is None:
             self.handle_not_found("Application")

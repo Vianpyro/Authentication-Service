@@ -75,17 +75,17 @@ jobs:
 
           # Check each versioned API route folder
           for v in $VERSIONS; do
-            OLD_API_VERSION=$(get_version_from_commit "$BASE_SHA" "api/app/routes/$v/__init__.py")
-            NEW_API_VERSION=$(get_version "api/app/routes/$v/__init__.py")
+            OLD_API_VERSION=$(get_version_from_commit "$BASE_SHA" "api/app/$v/__init__.py")
+            NEW_API_VERSION=$(get_version "api/app/$v/__init__.py")
 
             echo "Debug: $v OLD_API_VERSION='$OLD_API_VERSION'"
             echo "Debug: $v NEW_API_VERSION='$NEW_API_VERSION'"
 
             if [ "$OLD_API_VERSION" = "$NEW_API_VERSION" ]; then
-              REPORT+="🛑 Version $v was modified, but \`__version__\` value was not updated in \`api/app/routes/$v/__init__.py\` (still $NEW_API_VERSION)\n"
+              REPORT+="🛑 Version $v was modified, but \`__version__\` value was not updated in \`api/app/$v/__init__.py\` (still $NEW_API_VERSION)\n"
               EXIT_CODE=1
             else
-              REPORT+="✅ \`api/app/routes/$v/__init__.py\` version changed: $OLD_API_VERSION → $NEW_API_VERSION\n"
+              REPORT+="✅ \`api/app/$v/__init__.py\` version changed: $OLD_API_VERSION → $NEW_API_VERSION\n"
             fi
           done
 
