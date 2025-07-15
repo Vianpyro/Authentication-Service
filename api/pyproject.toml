@@ -30,12 +30,3 @@ exclude = ["tests*"]
 [tool.setuptools.dynamic]
 version = { attr = "version.__version__" }
 dependencies = { file = ["requirements.txt"] }
-
-# Add isort and black configuration
-[tool.isort]
-profile = "black"
-line_length = 120
-
-[tool.black]
-line-length = 120
-target-version = ['py312']

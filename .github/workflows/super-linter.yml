@@ -24,17 +24,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Create temporary linter configuration files
-        run: |
-          # Create Black configuration
-          echo "--line-length=120" > .python-black
-
-          # Create isort configuration
-          cat > .isort.cfg << EOF
-          [settings]
-          profile = black
-          line_length = 120
-          EOF
+      - name: Create temporary Black configuration
+        run: echo "--line-length=120" > .python-black
 
       - name: Run Super Linter
         uses: super-linter/super-linter/slim@v7
@@ -48,9 +39,8 @@ jobs:
           VALIDATE_PYTHON_ISORT: false
           VALIDATE_PYTHON_MYPY: false
           VALIDATE_PYTHON_PYLINT: false
-          # Configure Python tools
-          PYTHON_BLACK_CONFIG_FILE: api/pyproject.toml
-          PYTHON_ISORT_CONFIG_FILE: api/pyproject.toml
+          # Configure Python tools - use the temporary file created
+          PYTHON_BLACK_CONFIG_FILE: .python-black
           # Enable fixers for PR events
           FIX_HTML_PRETTIER: ${{ github.event_name == 'pull_request' }}
           FIX_JSON: ${{ github.event_name == 'pull_request' }}
