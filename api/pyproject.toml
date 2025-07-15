@@ -34,3 +34,7 @@ dependencies = { file = ["requirements.txt"] }
 [tool.isort]
 profile = 'black'
 line_length = 120
+
+[tool.black]
+line-length = 120
+target-version = ['py312']
