@@ -139,7 +139,9 @@ async def register_pending_user(
                 user_tz = zoneinfo.ZoneInfo(request_body.timezone)
                 expires_at_local = expires_at.astimezone(user_tz)
                 tz_name = expires_at_local.strftime("%Z")
-                expires_at_formatted = expires_at_local.strftime(f"%B %d, %Y at %I:%M %p {tz_name}")
+                expires_at_formatted = expires_at_local.strftime(
+                    f"%B %d, %Y at %I:%M %p {tz_name}"
+                )
             except (zoneinfo.ZoneInfoNotFoundError, ValueError):
                 expires_at_formatted = expires_at.strftime("%B %d, %Y at %I:%M %p UTC")
         else:
@@ -148,7 +150,9 @@ async def register_pending_user(
         expires_at_formatted = str(expires_at)
 
     # Retrieve the application name from the database
-    result = await db.execute(text("SELECT get_application_name(:app_id)"), {"app_id": request_body.app_id})
+    result = await db.execute(
+        text("SELECT get_application_name(:app_id)"), {"app_id": request_body.app_id}
+    )
     app_name = result.scalar_one_or_none()
 
     send_email_background(
