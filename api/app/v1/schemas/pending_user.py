@@ -51,11 +51,7 @@ class RegisterRequest(BaseModel):
             description="The timezone of the user, used for formatting expiration times.",
             min_length=1,
             max_length=50,
-            example=(
-                random.choice(sorted(zoneinfo.available_timezones()))
-                if os.name == "posix"
-                else "Europe/Paris"
-            ),
+            example=(random.choice(sorted(zoneinfo.available_timezones())) if os.name == "posix" else "Europe/Paris"),
             default="UTC",
         ),
     ]

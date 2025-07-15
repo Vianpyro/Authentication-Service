@@ -34,9 +34,7 @@ router = APIRouter()
     # response_model=Union[UserLoginResponse, UserLogin2faResponse],
     response_description="User logged in successfully",
 )
-async def login_user(
-    request_body: UserLoginRequest, request: Request, db: AsyncSession = Depends(get_db)
-):
+async def login_user(request_body: UserLoginRequest, request: Request, db: AsyncSession = Depends(get_db)):
     """
     Log in a user with email and password.
 
@@ -101,9 +99,7 @@ async def login_user(
         user_dict = dict(data._mapping) if hasattr(data, "_mapping") else dict(data)
 
         if data.is_2fa_enabled:
-            mfa_access_token = await create_mfa_challenge_session(
-                data.id, db, request_body.app_id, request
-            )
+            mfa_access_token = await create_mfa_challenge_session(data.id, db, request_body.app_id, request)
             user_dict.update({"challenge_token": mfa_access_token})
             return UserLogin2faResponse.model_validate(user_dict)
 

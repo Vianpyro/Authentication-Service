@@ -21,9 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 load_dotenv()
 
 TOKEN_PEPPER = os.getenv("TOKEN_PEPPER", "").encode("utf-8")
-FIELD_HASH_SALT = os.getenv("FIELD_HASH_SALT", "public-tenant-aware-salt").encode(
-    "utf-8"
-)
+FIELD_HASH_SALT = os.getenv("FIELD_HASH_SALT", "public-tenant-aware-salt").encode("utf-8")
 
 if not TOKEN_PEPPER:
     raise RuntimeError("Missing required secret: TOKEN_PEPPER")
