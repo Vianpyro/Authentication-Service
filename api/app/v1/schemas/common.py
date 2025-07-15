@@ -78,9 +78,7 @@ class CommonFieldTypes:
             min_length=64,
             max_length=64,
             description="Hash of the field",
-            example=hash_field(
-                "".join(choice(ascii_letters) for _ in range(10)), "example_salt"
-            ),
+            example=hash_field("".join(choice(ascii_letters) for _ in range(10)), "example_salt"),
         ),
     ]
 
