@@ -24,8 +24,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Create temporary Black configuration
-        run: echo "--line-length=120" > .python-black
+      # - name: Create temporary Black configuration
+      #   run: echo "--line-length=120" > .python-black
 
       - name: Run Super Linter
         uses: super-linter/super-linter/slim@v7
@@ -40,7 +40,7 @@ jobs:
           VALIDATE_PYTHON_MYPY: false
           VALIDATE_PYTHON_PYLINT: false
           # Configure Python tools - use the temporary file created
-          PYTHON_BLACK_CONFIG_FILE: .python-black
+          # PYTHON_BLACK_CONFIG_FILE: .python-black
           # Enable fixers for PR events
           FIX_HTML_PRETTIER: ${{ github.event_name == 'pull_request' }}
           FIX_JSON: ${{ github.event_name == 'pull_request' }}

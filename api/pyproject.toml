@@ -30,3 +30,7 @@ exclude = ["tests*"]
 [tool.setuptools.dynamic]
 version = { attr = "version.__version__" }
 dependencies = { file = ["requirements.txt"] }
+
+[tool.isort]
+profile = 'black'
+line_length = 120
