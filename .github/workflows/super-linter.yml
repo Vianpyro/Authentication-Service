@@ -40,7 +40,7 @@ jobs:
           VALIDATE_PYTHON_MYPY: false
           VALIDATE_PYTHON_PYLINT: false
           # Configure Python tools - use the temporary file created
-          # PYTHON_BLACK_CONFIG_FILE: .python-black
+          PYTHON_BLACK_CONFIG_FILE: .api/pyproject.toml
           # Enable fixers for PR events
           FIX_HTML_PRETTIER: ${{ github.event_name == 'pull_request' }}
           FIX_JSON: ${{ github.event_name == 'pull_request' }}
