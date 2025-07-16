@@ -11,8 +11,6 @@ The table below lists which versions of the project currently receive security u
 
 I recommend all users upgrade to the latest minor version to receive the latest security patches.
 
----
-
 ## Reporting a Vulnerability
 
 Security is a top priority for this project.
@@ -23,8 +21,6 @@ I aim to respond to all reports **as soon as possible** and will issue out-of-ba
 You will be notified via GitHub once your advisory is triaged, accepted, resolved, or closed.
 
 If your report leads to a confirmed vulnerability, I would be happy to **publicly acknowledge** your contribution (with your permission) in the project's changelog or a dedicated section in the repository.
-
----
 
 ## Scope
 
@@ -44,19 +40,13 @@ Please do **not** report issues like:
 - Minor typos or documentation errors
 - Non-security bugs (report those via standard GitHub issues)
 
----
-
 ## Acknowledgments
 
 I appreciate and acknowledge all security researchers and users who responsibly disclose vulnerabilities. If you'd like to be credited, please let me know when reporting.
 
----
-
 ## Bug Bounty
 
 At this time, I do **not** offer a monetary or private bug bounty program.
-
----
 
 ## Security Patch Policy
 
