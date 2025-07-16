@@ -21,9 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 load_dotenv()
 
 TOKEN_PEPPER = os.getenv("TOKEN_PEPPER", "").encode("utf-8")
-FIELD_HASH_SALT = os.getenv("FIELD_HASH_SALT", "public-tenant-aware-salt").encode(
-    "utf-8"
-)
+FIELD_HASH_SALT = os.getenv("FIELD_HASH_SALT", "public-tenant-aware-salt").encode("utf-8")
 
 if not TOKEN_PEPPER:
     raise RuntimeError("Missing required secret: TOKEN_PEPPER")
@@ -58,11 +56,11 @@ async def require_access_token(
     token_hash = hash_token(token)
 
     result = await db.execute(
-        text("SELECT * FROM get_access_token(p_token_hash => :p_token_hash)"),
+        text("SELECT * FROM get_access_token(p_token_hash := :p_token_hash)"),
         {"p_token_hash": token_hash},
     )
 
-    session = result.fetchone()
+    session = result.mappings().first()
 
     if not session:
         raise HTTPException(
@@ -85,10 +83,10 @@ async def require_challenge_token(
     token = mfa_challenge.removeprefix("Bearer ").strip()
 
     result = await db.execute(
-        text("SELECT * FROM get_totp_secret(p_token_hash => :p_token_hash)"),
+        text("SELECT * FROM get_totp_secret(p_token_hash := :p_token_hash)"),
         {"p_token_hash": hash_token(token)},
     )
-    data = result.fetchone()
+    data = result.mappings().first()
 
     if not data:
         raise HTTPException(

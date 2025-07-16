@@ -6,9 +6,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
 
-def create_login_response_with_cookies(
-    response_data: Dict[str, Any], session: Dict[str, str | datetime]
-) -> Response:
+def create_login_response_with_cookies(response_data: Dict[str, Any], session: Dict[str, str | datetime]) -> Response:
     """
     Create a JSON response with secure authentication cookies.
 

@@ -100,11 +100,11 @@ async def confirm_pending_user(
             text(
                 """
                 SELECT confirm_pending_user(
-                    p_app_id => :app_id,
-                    p_token_hash => :token_hash,
-                    p_password => :password,
-                    p_ip_address => :ip_address,
-                    p_user_agent => :user_agent
+                    p_app_id := :app_id,
+                    p_token_hash := :token_hash,
+                    p_password := :password,
+                    p_ip_address := :ip_address,
+                    p_user_agent := :user_agent
                 )"""
             ),
             {

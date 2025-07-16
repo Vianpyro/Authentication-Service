@@ -31,11 +31,10 @@ router = APIRouter()
 @router.post(
     "",
     status_code=status.HTTP_200_OK,
+    # response_model=Union[UserLoginResponse, UserLogin2faResponse],
     response_description="User logged in successfully",
 )
-async def login_user(
-    request_body: UserLoginRequest, request: Request, db: AsyncSession = Depends(get_db)
-):
+async def login_user(request_body: UserLoginRequest, request: Request, db: AsyncSession = Depends(get_db)):
     """
     Log in a user with email and password.
 
@@ -75,10 +74,10 @@ async def login_user(
             text(
                 """
                 SELECT * FROM login_user (
-                    p_app_id => :app_id,
-                    p_email_hash => :email_hash,
-                    p_ip_address => :ip_address,
-                    p_user_agent => :user_agent
+                    p_app_id := :app_id,
+                    p_email_hash := :email_hash,
+                    p_ip_address := :ip_address,
+                    p_user_agent := :user_agent
                 )"""
             ),
             {
@@ -88,7 +87,7 @@ async def login_user(
                 "user_agent": request.headers.get("user-agent", ""),
             },
         )
-        data = result.fetchone()
+        data = result.mappings().first()
 
         if not data:
             raise ValueError("User not found with specified email")
@@ -100,9 +99,7 @@ async def login_user(
         user_dict = dict(data._mapping) if hasattr(data, "_mapping") else dict(data)
 
         if data.is_2fa_enabled:
-            mfa_access_token = await create_mfa_challenge_session(
-                data.id, db, request_body.app_id, request
-            )
+            mfa_access_token = await create_mfa_challenge_session(data.id, db, request_body.app_id, request)
             user_dict.update({"challenge_token": mfa_access_token})
             return UserLogin2faResponse.model_validate(user_dict)
 

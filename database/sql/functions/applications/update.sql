@@ -19,7 +19,7 @@ BEGIN
         name = COALESCE(p_new_name, a.name),
         slug = COALESCE(p_new_slug, a.slug),
         description = COALESCE(p_new_description, a.description),
-        is_active = p_new_status,
+        is_active = COALESCE(p_new_status, a.is_active),
         updated_at = current_timestamp
     WHERE a.id = p_app_id
     RETURNING a.name, a.slug, a.description, a.is_active, a.updated_at::TIMESTAMPTZ;

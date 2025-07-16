@@ -29,10 +29,15 @@ jobs:
           if [ "${{ github.event_name }}" = "release" ]; then
             VERSION="${{ github.event.release.tag_name }}"
             VERSION="${VERSION#v}"
-          elif [ -f "api/version.py" ]; then
-            VERSION=$(grep -oP '__version__\s*=\s*"\K[0-9]+\.[0-9]+\.[0-9]+' api/version.py)
+          elif [ -f "app/api/version.py" ]; then
+            VERSION=$(grep -oP '__version__\s*=\s*"\K[0-9]+\.[0-9]+\.[0-9]+' app/api/version.py)
           else
-            VERSION=$(date +%Y.%m.%d.%H%M)
+            LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+            if [ -n "$LATEST_TAG" ]; then
+              VERSION="${LATEST_TAG#v}"
+            else
+              VERSION=$(date +%Y.%m.%d.%H%M)
+            fi
           fi
           echo "tag=$VERSION" >> "$GITHUB_OUTPUT"
 
