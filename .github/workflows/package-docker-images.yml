@@ -29,8 +29,8 @@ jobs:
           if [ "${{ github.event_name }}" = "release" ]; then
             VERSION="${{ github.event.release.tag_name }}"
             VERSION="${VERSION#v}"
-          elif [ -f "app/api/version.py" ]; then
-            VERSION=$(grep -oP '__version__\s*=\s*"\K[0-9]+\.[0-9]+\.[0-9]+' app/api/version.py)
+          elif [ -f "api/app/version.py" ]; then
+            VERSION=$(grep -oP '__version__\s*=\s*"\K[0-9]+\.[0-9]+\.[0-9]+' api/app/version.py)
           else
             LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
             if [ -n "$LATEST_TAG" ]; then
@@ -57,10 +57,13 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             COMPONENTS='["api", "database"]'
           elif [ "${{ github.event_name }}" = "release" ]; then
-            PREV_TAG=$(git tag --sort=-version:refname | grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+' | sed -n '2p')
-            if [ -z "$PREV_TAG" ]; then
+            PREV_TAG=$(git tag --sort=-version:refname | grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+' | head -2 | tail -1)
+
+            if [ -z "$PREV_TAG" ] || [ "$PREV_TAG" = "${{ github.event.release.tag_name }}" ]; then
+              echo "First release or no previous tag found, building all components"
               COMPONENTS='["api", "database"]'
             else
+              echo "Checking changes since $PREV_TAG"
               CHANGED_COMPONENTS=()
               # Check API changes
               if git diff --name-only "$PREV_TAG"..HEAD | grep -q '^api/.*\.py$'; then
@@ -72,13 +75,15 @@ jobs:
               fi
 
               if [ ${#CHANGED_COMPONENTS[@]} -eq 0 ]; then
-                COMPONENTS='[]'
+                echo "No changes detected, but building all components for release"
+                COMPONENTS='["api", "database"]'
               else
                 COMPONENTS=$(printf '%s\n' "${CHANGED_COMPONENTS[@]}" | jq -R . | jq -s .)
               fi
             fi
           fi
           echo "components=$COMPONENTS" >> "$GITHUB_OUTPUT"
+          echo "Will build: $COMPONENTS"
 
   docker-build:
     runs-on: ubuntu-latest
