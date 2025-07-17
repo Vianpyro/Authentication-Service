@@ -6,7 +6,7 @@ The table below lists which versions of the project currently receive security u
 
 | Version | Supported          |
 | ------- | ------------------ |
-|   0.4.x | :white_check_mark: |
+| 0.4.x   | :white_check_mark: |
 | < 0.4.1 | :x:                |
 
 I recommend all users upgrade to the latest minor version to receive the latest security patches.
@@ -37,6 +37,7 @@ All security-related concerns are welcome, especially those involving:
 - Insecure defaults or misconfigurations
 
 Please do **not** report issues like:
+
 - Minor typos or documentation errors
 - Non-security bugs (report those via standard GitHub issues)
 
