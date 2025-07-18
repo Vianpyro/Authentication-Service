@@ -18,6 +18,16 @@
             "username": "vscode",
             "askForPassword": false,
             "password": "test"
+        },
+        {
+            "name": "Admin",
+            "server": "localhost",
+            "driver": "PostgreSQL",
+            "port": 5432,
+            "database": "postgres",
+            "username": "vscode",
+            "askForPassword": false,
+            "password": "test"
         }
     ],
     "python.analysis.extraPaths": ["./api"],

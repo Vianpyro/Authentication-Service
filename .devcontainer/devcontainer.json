@@ -24,13 +24,15 @@
             ]
         }
     },
-    "forwardPorts": [8000],
+    "forwardPorts": [
+        8000
+    ],
     "otherPortsAttributes": {
         "onAutoForward": "ignore"
     },
-    "postCreateCommand": "initdb -D $PGDATA && pg_ctl -D $PGDATA -o '-k /run/postgresql' -l /tmp/pg.log start && createdb authentication-service && pg_ctl -D $PGDATA stop",
+    "postCreateCommand": "initdb -D $PGDATA && pg_ctl -D $PGDATA -o \"-k /run/postgresql -c shared_preload_libraries=pg_cron -c cron.database_name=postgres\" -l /tmp/pg.log start && createdb authentication-service && pg_ctl -D $PGDATA stop",
     "postStartCommand": {
-        "startPostgres": "pg_ctl -D $PGDATA -o '-k /run/postgresql' -l /tmp/pg.log start",
+        "startPostgres": "pg_ctl -D $PGDATA -o \"-k /run/postgresql -c shared_preload_libraries=pg_cron -c cron.database_name=postgres\" -l /tmp/pg.log start",
         "installApiRequirements": "pip3 install -r api/requirements-dev.txt"
     },
     "postAttachCommand": {

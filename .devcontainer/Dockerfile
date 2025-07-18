@@ -2,7 +2,8 @@ FROM alpine:latest
 
 # Install common tools, PostgreSQL and build tools for pgTAP
 RUN apk add --no-cache bash git \
-    postgresql postgresql-contrib su-exec tini nodejs npm \
+    postgresql postgresql-contrib postgresql-pg_cron \
+    su-exec tini nodejs npm nano \
     make gcc musl-dev postgresql-dev perl patch \
     build-base perl-dev openssl-dev python3 py3-pip \
     && cpan TAP::Parser::SourceHandler::pgTAP
