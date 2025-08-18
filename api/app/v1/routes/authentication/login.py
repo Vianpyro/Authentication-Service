@@ -11,14 +11,12 @@ Users are the primary entities that interact with applications, and this module 
 
 # from typing import Union
 
-from app.utility.authentication import (
-    create_login_session,
-    create_mfa_challenge_session,
-)
+from app.utility.authentication import create_login_session, create_mfa_challenge_session
 from app.utility.database import get_db
 from app.utility.response import create_login_response_with_cookies
 from app.utility.security.hashing import hash_email
-from app.utility.security.password import verify_password
+from app.utility.security.password import validate_password_complexity, verify_password
+from app.utility.security_logger import log_security_event
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -52,6 +50,21 @@ async def login_user(request_body: UserLoginRequest, request: Request, db: Async
     Raises:
         HTTPException: If authentication fails or user is not found
     """
+
+    try:
+        validate_password_complexity(request_body.password)
+    except ValueError as e:
+        await log_security_event(
+            db=db,
+            event_type="suspicious_login_attempt",
+            app_id=request_body.app_id,
+            metadata={
+                "reason": "invalid_password_format",
+                "password_error": str(e),
+                "ip_address": request.client.host,
+                "user_agent": request.headers.get("user-agent"),
+            },
+        )
 
     # Define error mappings for cleaner exception handling
     error_mappings = {

@@ -10,6 +10,7 @@ to ensure secure handling of user credentials and sensitive data.
 import hashlib
 import hmac
 import os
+import re
 import secrets
 
 from app.utility.database import get_db
@@ -39,6 +40,9 @@ def hash_token(token: str) -> bytes:
 
 def verify_token(token: str, stored_hash: bytes) -> bool:
     """Constant-time check of a token."""
+    # Add format validation
+    if not re.match(r"^[A-Za-z0-9_-]{32,128}$", token):
+        return False
     return hmac.compare_digest(hash_token(token), stored_hash)
 
 

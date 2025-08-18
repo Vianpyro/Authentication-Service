@@ -6,10 +6,15 @@ database interactions. It provides a dependency function for obtaining a
 database session in FastAPI endpoints.
 """
 
+import os
+
+from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
-DATABASE_URL = "postgresql+asyncpg://vscode@0.0.0.0:5432/authentication-service"
+load_dotenv()
+
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://vscode@0.0.0.0:5432/authentication-service")
 engine = create_async_engine(DATABASE_URL, echo=False, pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
 

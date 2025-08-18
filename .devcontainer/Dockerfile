@@ -4,7 +4,7 @@ FROM alpine:latest
 RUN apk add --no-cache bash git \
     postgresql postgresql-contrib su-exec tini nodejs npm \
     make gcc musl-dev postgresql-dev perl patch \
-    build-base perl-dev openssl-dev python3 py3-pip \
+    build-base perl-dev openssl-dev python3 python3-dev py3-pip \
     && cpan TAP::Parser::SourceHandler::pgTAP
 
 # Clone pgTAP for Unit Testing

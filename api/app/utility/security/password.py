@@ -38,25 +38,28 @@ def validate_password_complexity(password: str) -> str:
     - Contains at least one digit (0-9).
     - Contains at least one special character (any non-alphanumeric character).
     """
-    error_messages = []
+    errors = []
 
     if len(password) < 12:
-        error_messages.append("must be at least 12 characters long")
+        errors.append("must be at least 12 characters long")
+
+    if len(password) > 200:
+        errors.append("must not exceed 200 characters")  # Potential buffer overflow attempt
 
     if not search(r"[A-Z]", password):
-        error_messages.append("must contain at least one uppercase letter")
+        errors.append("must contain at least one uppercase letter")
 
     if not search(r"[a-z]", password):
-        error_messages.append("must contain at least one lowercase letter")
+        errors.append("must contain at least one lowercase letter")
 
     if not search(r"\d", password):
-        error_messages.append("must contain at least one digit")
+        errors.append("must contain at least one digit")
 
     if not search(r"[^A-Za-z0-9]", password):
-        error_messages.append("must contain at least one special character")
+        errors.append("must contain at least one special character")
 
-    if error_messages:
-        combined_message = f"Password validation failed: {'; '.join(error_messages)}"
+    if errors:
+        combined_message = f"Password validation failed: {'; '.join(errors)}"
         raise ValueError(combined_message)
 
     return password
